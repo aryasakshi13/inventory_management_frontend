@@ -8,7 +8,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import './index.css';
 import ProtectedRoute from './components/protectedRoute';
   
-const Login = lazy(() => import('./pages/auth/Login'));
+const Login = lazy(() => import('./pages/auth/login'));
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
 
 function App() {
