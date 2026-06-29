@@ -14,4 +14,7 @@ export default defineConfig({
        "@": path.resolve(__dirname, "./src"),
     },
   },
+   build: {
+    cssMinify: 'esbuild', // 👈 This overrides LightningCSS and allows Tailwind v4 to compile smoothly
+  },
 })

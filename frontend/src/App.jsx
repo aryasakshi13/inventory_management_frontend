@@ -3,7 +3,7 @@
 import './App.css';
 import React, {lazy, Suspense} from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-// import Login from './pages/auth/Login';
+
 import ProtectedRoute from './components/ProtectedRoute';
 import './index.css';
   
