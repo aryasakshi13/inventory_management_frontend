@@ -4,10 +4,11 @@ import './App.css';
 import React, {lazy, Suspense} from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-import ProtectedRoute from './components/ProtectedRoute';
+// import ProtectedRoute from './components/ProtectedRoute';
 import './index.css';
+import ProtectedRoute from './components/protectedRoute';
   
-const Login = lazy(() => import('./pages/auth/Login'));
+// const Login = lazy(() => import('./pages/auth/Login'));
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
 
 function App() {
