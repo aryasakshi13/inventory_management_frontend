@@ -3,9 +3,9 @@ import axios from 'axios';
 import { Truck, Users, Database, Plus, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 
 // 🎯 Component Imports (Matching your verified filenames character-for-character)
-import TransitLogsTable from '../../components/issue/TransitLogsTable';
+import TransitLogsTable from '../../components/issue/TransitLogstable';
 import EmployeeAllocationTable from '../../components/issue/EmployeeAllocationTable';
-import BranchAllocationTable from '../../components/issue/BranchAllocationTable';
+// import BranchAllocationTable from '../../components/issue/BranchAllocationTable';
 import IssueEmployeeModal from '../../components/issue/IssueEmployeeModal';
 import BranchTransferModal from '../../components/issue/BranchTransferModal';
 
