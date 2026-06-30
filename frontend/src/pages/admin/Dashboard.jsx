@@ -4,6 +4,7 @@ import ItemsDirectory from '../modules/ItemsDirectory.jsx';
 import IssueMaster from '../modules/IssueMaster.jsx';
 import BranchMaster from '../modules/BranchMaster.jsx';
 import VendorsDirectory from '../modules/VendorDirectory.jsx';
+import logoImage from '../../assets/Accuprobe_image.jpg';
 import { 
     LayoutDashboard, 
     Boxes, 
@@ -40,7 +41,7 @@ const Dashboard = () => {
 
     const userRole = (user?.role || user?.Role || 'employee').toLowerCase();
      const menuItems = [
-        { name: 'Overview', icon: LayoutDashboard, allowedRoles: ['admin', 'branch admin', 'employee']},
+        // { name: 'Overview', icon: LayoutDashboard, allowedRoles: ['admin', 'branch admin', 'employee']},
         { name: 'Stocks In', icon: Boxes, allowedRoles: ['admin', 'branch admin', 'employee'] },
         //   { name: 'Stock In', icon: Boxes, allowedRoles: ['admin', 'branch admin', 'employee'] },
         { name: 'Item Issue', icon: Users, allowedRoles: ['admin', 'branch admin'] },
@@ -50,7 +51,7 @@ const Dashboard = () => {
         { name: 'Items', icon: Layers, allowedRoles: ['admin',  'branch admin' ] },
          { name: 'Vendors Control', icon: Truck, allowedRoles: ['admin'] },
         // { name: 'Analytics Control', icon: TrendingUp, allowedRoles: ['admin']  },
-        { name: 'System Settings', icon: Settings, allowedRoles: ['admin']  },
+        // { name: 'System Settings', icon: Settings, allowedRoles: ['admin']  },
     ];
 
       const initialDefaultTab = menuItems.find(item => 
@@ -314,11 +315,22 @@ const Dashboard = () => {
 
             {/* SIDEBAR COMPONENT */}
             <aside className="w-64 bg-[#131B2E]/90 border-r border-[#1E2943] backdrop-blur-md hidden md:flex flex-col">
-                <div className="h-16 flex items-center px-6 border-b border-[#1E2943] gap-2.5">
-                    <Layers className="w-5 h-5 text-blue-400" />
-                    <span className="font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-                        StockFlow <span className="text-blue-500 text-xs font-semibold">Pro</span>
+                <div className="h-16 flex items-center px-6 border-b border-[#1E2943] gap-3">
+                    {/* <Layers className="w-5 h-5 text-blue-400" /> */}
+                     
+                     <img 
+                        src={logoImage} 
+                        alt="Accuprobe Logo" 
+                        className="w-12 h-12 object-contain rounded-md" 
+                    />
+
+                    {/* <span className="font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+                       Accuprobe <span className="text-blue-500 text-xs font-semibold">Pro</span>
+                    </span> */}
+                    <span className="font-bold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent text-base">
+                        Accuprobe
                     </span>
+
                 </div>
 
                 <div className="px-4 py-3 mx-3 my-4 bg-[#0B0F19]/60 border border-[#1E2943] rounded-xl flex items-center gap-3">
