@@ -52,9 +52,9 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
         const fetchSystemRegistries = async () => {
             try {
                 const [itemsRes, empRes, officesRes] = await Promise.all([
-                    axios.get('http://localhost:5001/api/items', { withCredentials: true }),
-                    axios.get('http://localhost:5001/api/auth/employees?limit=500', { withCredentials: true }),
-                    axios.get('http://localhost:5001/api/branch?limit=1000', { withCredentials: true })
+                    axios.get('https://inventory-manage-q4yr.onrender.com/api/items', { withCredentials: true }),
+                    axios.get('https://inventory-manage-q4yr.onrender.com/api/auth/employees?limit=500', { withCredentials: true }),
+                    axios.get('https://inventory-manage-q4yr.onrender.com/api/branch?limit=1000', { withCredentials: true })
                 ]);
                 if (itemsRes.data.success) setAvailableItems(itemsRes.data.data || []);
                 setEmployeeRegistry(empRes.data.data || []);
@@ -96,13 +96,13 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
 
 
             const [transferRes, issueHistoryRes, stockRes] = await Promise.all([
-              axios.get('http://localhost:5001/api/inventry/transfers-log', { withCredentials: true }),
-                axios.get('http://localhost:5001/api/inventry/issued-history', { withCredentials: true }).catch(() => ({ data: { data: [] } })),
+              axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/transfers-log', { withCredentials: true }),
+                axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/issued-history', { withCredentials: true }).catch(() => ({ data: { data: [] } })),
 
 
-                // axios.get(`http://localhost:5001/api/inventry/branch-stock/${userRole === 'branch admin' ? userOfficeId : currentSelectedOfficeId}`, { withCredentials: true }).catch(() => ({ data: { data: [] } }))
+                // axios.get(`https://inventory-manage-q4yr.onrender.com/api/inventry/branch-stock/${userRole === 'branch admin' ? userOfficeId : currentSelectedOfficeId}`, { withCredentials: true }).catch(() => ({ data: { data: [] } }))
 
-             axios.get(`http://localhost:5001/api/inventry/branch-stock/${userRole === 'branch admin' ? userOfficeId : 878}`, { withCredentials: true }).catch(() => ({ data: { data: [] } }))
+             axios.get(`https://inventory-manage-q4yr.onrender.com/api/inventry/branch-stock/${userRole === 'branch admin' ? userOfficeId : 878}`, { withCredentials: true }).catch(() => ({ data: { data: [] } }))
             ]);
 
             const rawTransfers = transferRes.data.transfers || transferRes.data.data || [];
@@ -221,7 +221,7 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
     const handleActionUpdateStatus = async (endpoint, batchId) => {
         try {
             setMsg({ type: '', text: '' });
-            const res = await axios.post(`http://localhost:5001/api/inventry/${endpoint}`, { batchId }, { withCredentials: true });
+            const res = await axios.post(`https://inventory-manage-q4yr.onrender.com/api/inventry/${endpoint}`, { batchId }, { withCredentials: true });
             if (res.data.success) {
                 setMsg({ type: 'success', text: res.data.message });
                 syncActiveLedgers();

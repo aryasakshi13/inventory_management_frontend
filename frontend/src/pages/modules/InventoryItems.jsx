@@ -138,12 +138,12 @@ const InventoryItems = ({ user, userRole}) => {
             setIsLoading(true);
             
             // Fires GET request using role-based query headers matching your backend guards
-            const response = await axios.get(`http://localhost:5001/api/inventry?page=${currentPage}&limit=${rowsPerPage}`, {
+            const response = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/inventry?page=${currentPage}&limit=${rowsPerPage}`, {
                 // headers: {
                 //     'x-user-role': userRole,
                 //     'x-user-office-id': userBranchId
-                // }
-                  withCredentials: true
+                // },
+                  //withCredentials: true
             });
             
             if (response.data.success) {

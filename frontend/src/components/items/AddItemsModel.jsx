@@ -50,7 +50,7 @@ const AddItemClassModal = ({ isOpen, onClose, userRole, onSuccess }) => {
             setIsSubmitting(true);
             setErrorMessage('');
 
-            const response = await axios.post('http://localhost:5001/api/items/add', {
+            const response = await axios.post('https://inventory-manage-q4yr.onrender.com/api/items/add', {
                 itemName: itemName.trim(),
                 category: category.trim()
             }, {

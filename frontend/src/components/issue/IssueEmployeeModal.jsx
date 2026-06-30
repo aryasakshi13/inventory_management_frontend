@@ -172,7 +172,7 @@
 //                 empName 
 //             };
 
-//             const res = await axios.post('http://localhost:5001/api/inventry/issue', payload, { withCredentials: true });
+//             const res = await axios.post('https://inventory-manage-q4yr.onrender.com/api/inventry/issue', payload, { withCredentials: true });
 //             if (res.data.success) {
 //                 onActionSuccess();
 //                 onClose();
@@ -328,7 +328,7 @@ const IssueEmployeeModal = ({
                 try {
                     setIsLoadingStock(true);
                     // 📡 Hits your new backend router path parameter to pull real rows
-                    const res = await axios.get('http://localhost:5001/api/inventry/branch-stock/1', { withCredentials: true });
+                    const res = await axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/branch-stock/1', { withCredentials: true });
                     if (res.data.success) {
                         setLocalBranchStock(res.data.data || []);
                     }
@@ -442,7 +442,7 @@ const IssueEmployeeModal = ({
         try {
                 setIsSearchingEmployees(true);
                 // 📡 Hits your newly registered safe search backend endpoint layout
-                const res = await axios.get(`http://localhost:5001/api/auth/search?query=${value}`, { withCredentials: true });
+                const res = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/auth/search?query=${value}`, { withCredentials: true });
                 if (res.data.success) {
                     setFilteredEmployees(res.data.data || []);
                     setShowEmpDropdown(true);
@@ -530,7 +530,7 @@ const IssueEmployeeModal = ({
                 empName 
             };
 
-            const res = await axios.post('http://localhost:5001/api/inventry/issue', payload, { withCredentials: true });
+            const res = await axios.post('https://inventory-manage-q4yr.onrender.com/api/inventry/issue', payload, { withCredentials: true });
             if (res.data.success) {
                 onActionSuccess();
                 onClose();

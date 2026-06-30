@@ -32,7 +32,7 @@ const AddVendorModal = ({ isOpen, onClose, onActionSuccess }) => {
 
         try {
             setIsSubmitting(true);
-            const res = await axios.post('http://localhost:5001/api/vendor', formData, { withCredentials: true });
+            const res = await axios.post('https://inventory-manage-q4yr.onrender.com/api/vendor', formData, { withCredentials: true });
             if (res.data.success) {
                 onActionSuccess();
                 onClose();

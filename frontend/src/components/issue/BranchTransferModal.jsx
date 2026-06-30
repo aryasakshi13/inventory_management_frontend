@@ -77,7 +77,7 @@ const BranchTransferModal = ({ isOpen, onClose, availableItems, availableOffices
                 courierName, 
                 courierDate 
             };
-            const res = await axios.post('http://localhost:5001/api/inventry/issue', payload, { withCredentials: true });
+            const res = await axios.post('https://inventory-manage-q4yr.onrender.com/api/inventry/issue', payload, { withCredentials: true });
             if (res.data.success) {
                 onActionSuccess();
                 onClose();

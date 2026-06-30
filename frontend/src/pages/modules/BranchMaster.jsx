@@ -17,7 +17,7 @@ const BranchMaster = ({ userRole, employees = [] }) => {
     const fetchOffices = useCallback(async () => {
         try {
             setIsLoading(true);
-            const res = await axios.get(`http://localhost:5001/api/branch?page=${currentPage}&limit=${rowsPerPage}`, { withCredentials: true });
+            const res = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/branch?page=${currentPage}&limit=${rowsPerPage}`, { withCredentials: true });
             console.log(res.data);
             if (res.data.success) {
                 setOffices(res.data.data || []);

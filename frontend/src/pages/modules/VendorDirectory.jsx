@@ -17,7 +17,7 @@ const VendorsDirectory = ({ userRole }) => {
     const fetchVendors = useCallback(async () => {
         try {
             setIsLoading(true);
-            const res = await axios.get(`http://localhost:5001/api/vendor?page=${currentPage}&limit=${rowsPerPage}`, { withCredentials: true });
+            const res = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/vendor?page=${currentPage}&limit=${rowsPerPage}`, { withCredentials: true });
             if (res.data.success) {
                 setVendors(res.data.data || []);
                 setTotalPages(res.data.pagination?.totalPages || 1);

@@ -128,7 +128,7 @@ const UpdateStockModel = ({ isOpen, onClose, itemData, userRole, currentOfficeId
                 formData.append('invoiceCopy', existingInvoicePath);
             }  
 
-            const response = await axios.post('http://localhost:5001/api/inventry/update', formData, {
+            const response = await axios.post('https://inventory-manage-q4yr.onrender.com/api/inventry/update', formData, {
                 headers: {
                      'Content-Type': 'multipart/form-data', 
                     'x-user-role': userRole,

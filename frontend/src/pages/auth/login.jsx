@@ -77,7 +77,7 @@ async function handleLogout() {
         setLogoutLoading(true);
 
         try {
-            const response = await fetch('http://localhost:5001/api/auth/logout', {
+            const response = await fetch('https://inventory-manage-q4yr.onrender.com/api/auth/logout', {
                 method: 'POST',
                 credentials: 'include' // Sends the secure cookie to the server to be explicitly destroyed
             });

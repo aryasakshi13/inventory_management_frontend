@@ -55,7 +55,7 @@ const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) =>
         try {
             setIsSubmitting(true);
             const res = await axios.post(
-                'http://localhost:5001/api/branch/offices',
+                'https://inventory-manage-q4yr.onrender.com/api/branch/offices',
                 formData,
                 { withCredentials: true }
             );

@@ -38,21 +38,21 @@ const AddStockModel = ({ isOpen, onClose, userRole, currentOfficeId, onSuccess }
         try {
             // 1. Fetch available item blueprints from itemmaster
  
-            // const itemsRes = await axios.get('http://localhost:5001/api/items');
+            // const itemsRes = await axios.get('https://inventory-manage-q4yr.onrender.com/api/items');
             // if (itemsRes.data.success) {
             //     setAvailableItems(itemsRes.data.data || []);
             // }
 
             // // 2. Fetch registered office names (Make sure you have this route open on backend)
-            // const officesRes = await axios.get('http://localhost:5001/api/branch');
+            // const officesRes = await axios.get('https://inventory-manage-q4yr.onrender.com/api/branch');
             // if (officesRes.data.success) {
             //     setAvailableOffices(officesRes.data.data || []); // Expecting array of { OfficeName }
             // }
 
               const [itemsRes, officesRes, vendorsRes] = await Promise.all([
-                axios.get('http://localhost:5001/api/items'),
-                axios.get('http://localhost:5001/api/branch'),
-                axios.get('http://localhost:5001/api/vendor?limit=1000')
+                axios.get('https://inventory-manage-q4yr.onrender.com/api/items'),
+                axios.get('https://inventory-manage-q4yr.onrender.com/api/branch'),
+                axios.get('https://inventory-manage-q4yr.onrender.com/api/vendor?limit=1000')
 
 
             ]);
@@ -218,7 +218,7 @@ const AddStockModel = ({ isOpen, onClose, userRole, currentOfficeId, onSuccess }
             if (purchaseFile) formData.append('purchaseCopy', purchaseFile);
             if (invoiceFile) formData.append('invoiceCopy', invoiceFile);
 
-            const response = await axios.post('http://localhost:5001/api/inventry/add', formData, {
+            const response = await axios.post('https://inventory-manage-q4yr.onrender.com/api/inventry/add', formData, {
                 // headers: {
                 //     'Content-Type': 'multipart/form-data',
                 //     'x-user-role': userRole,

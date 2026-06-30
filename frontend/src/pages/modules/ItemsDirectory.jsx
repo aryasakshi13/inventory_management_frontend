@@ -35,11 +35,11 @@ const ItemsDirectory = ({ userRole }) => {
         try {
             setIsLoading(true);
             setErrorMsg('');
-            // const response = await axios.get('http://localhost:5001/api/items', {
+            // const response = await axios.get('https://inventory-manage-q4yr.onrender.com/api/items', {
             //     withCredentials: true
             // });
              
-            const response = await axios.get(`http://localhost:5001/api/items?officeId=${selectedOffice}&itemId=${selectedItem}`, {
+            const response = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/items?officeId=${selectedOffice}&itemId=${selectedItem}`, {
                 withCredentials: true
             });
 
@@ -65,7 +65,7 @@ const ItemsDirectory = ({ userRole }) => {
             try {
                 // 1. Fetch clean offices using your exact /api/offices route!
                 // Passing a high limit to ensure we fetch all options for the filter menu dropdown
-                const offRes = await axios.get('http://localhost:5001/api/branch?limit=1000', { withCredentials: true });
+                const offRes = await axios.get('https://inventory-manage-q4yr.onrender.com/api/branch?limit=1000', { withCredentials: true });
                 // if (offRes.data.success) {
                 //     setOfficesDropdown(offRes.data.data || []);
                 // }
@@ -76,7 +76,7 @@ const ItemsDirectory = ({ userRole }) => {
                 }
 
                 // 2. Fetch clean item models directly from itemmaster table catalog
-                const itemRes = await axios.get('http://localhost:5001/api/items', { withCredentials: true });
+                const itemRes = await axios.get('https://inventory-manage-q4yr.onrender.com/api/items', { withCredentials: true });
                 // if (itemRes.data.success) {
                 //     setUniqueProductsDropdown(itemRes.data.data || []);
                 // }

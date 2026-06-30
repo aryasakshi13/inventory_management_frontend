@@ -92,7 +92,7 @@ const Dashboard = () => {
 //      React.useEffect(() => {
 //     const fetchDatabaseRegistry = async () => {
 //         try {
-//             const response = await fetch('http://localhost:5001/api/auth/employees', {
+//             const response = await fetch('https://inventory-manage-q4yr.onrender.com/api/auth/employees', {
 //                 method: 'GET',
 //                 headers: {
 //                     'Content-Type': 'application/json'
@@ -133,7 +133,7 @@ const Dashboard = () => {
       useEffect(() => {
         const fetchDatabaseRegistry = async () => {
             try {
-                const response = await fetch(`http://localhost:5001/api/auth/employees?page=${currentPage}&limit=${rowsPerPage}`, {
+                const response = await fetch(`https://inventory-manage-q4yr.onrender.com/api/auth/employees?page=${currentPage}&limit=${rowsPerPage}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -160,7 +160,7 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchOffices = async () => {
             try {
-                const res = await fetch('http://localhost:5001/api/branch?limit=1000', { credentials: 'include' });
+                const res = await fetch('https://inventory-manage-q4yr.onrender.com/api/branch?limit=1000', { credentials: 'include' });
                 const result = await res.json();
                 if (result.success) setOffices(result.data || []);
             } catch (err) {
@@ -223,7 +223,7 @@ const Dashboard = () => {
         try {
             const endpoint = modalMode === 'add' ? '/api/auth/add-employee' : '/api/auth/update-credentials';
             
-            const response = await fetch(`http://localhost:5001${endpoint}`, {
+            const response = await fetch(`https://inventory-manage-q4yr.onrender.com${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

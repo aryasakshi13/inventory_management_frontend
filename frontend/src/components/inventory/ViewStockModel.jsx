@@ -32,7 +32,7 @@ const ViewStockModal = ({ isOpen, onClose, itemData, userRole }) => {
         if (!filePath) return;
         const targetUrl = filePath.startsWith('http') 
             ? filePath 
-            : `http://localhost:5001/${filePath}`;
+            : `https://inventory-manage-q4yr.onrender.com/${filePath}`;
         window.open(targetUrl, '_blank', 'noopener,noreferrer');
     };
 
