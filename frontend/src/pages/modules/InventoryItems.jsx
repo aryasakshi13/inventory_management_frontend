@@ -136,15 +136,38 @@ const InventoryItems = ({ user, userRole}) => {
     const syncInventoryWithBackend = async () => {
         try {
             setIsLoading(true);
+
+             const token = localStorage.getItem('authToken');
+             console.log( "Token is >>>", token);
+
+             if (!token) {
+                console.warn("⚠️ Auth Token storage mein nahi mila! Pehle Login kijiye.");
+                setIsLoading(false);
+                return; 
+            }
             
             // Fires GET request using role-based query headers matching your backend guards
-            const response = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/inventry?page=${currentPage}&limit=${rowsPerPage}`, {
+            // const response = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/inventry?page=1&limit=50`, {
+
+                const baseUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:5001' 
+                : 'https://inventory-manage-q4yr.onrender.com';
+
+            //  const response = await axios.get(`http://localhost:5001/api/inventry?page=1&limit=50`, {
+                 const response = await axios.get(`${baseUrl}/api/inventry?page=1&limit=50`, {
+
                 // headers: {
                 //     'x-user-role': userRole,
                 //     'x-user-office-id': userBranchId
                 // },
-                  //withCredentials: true
+
+                headers: {
+                    'Authorization': `Bearer ${token}` 
+                },
+                  withCredentials: true
             });
+
+
             
             if (response.data.success) {
                 const rawRows = response.data.data || [];

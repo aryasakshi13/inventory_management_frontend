@@ -22,11 +22,17 @@ const navigate = useNavigate()
     async function handleLogin (e){
      e.preventDefault();
       setError('');
-      setSuccessMessage('');
+      setSuccessMessage('');3
      setLoading(true);
 
      try{
-        const response = await fetch('https://inventory-manage-q4yr.onrender.com/api/auth/login',{
+
+        const baseUrl = window.location.hostname === 'localhost'
+            ? 'http://localhost:5001'
+            : 'https://inventory-manage-q4yr.onrender.com';
+
+        // const response = await fetch('https://inventory-manage-q4yr.onrender.com/api/auth/login',{
+         const response = await fetch(`${baseUrl}/api/auth/login`,{
             method: 'POST',
             headers:{
                 'Content-type': 'application/json' 
@@ -40,7 +46,15 @@ const navigate = useNavigate()
         });
 
         const data = await response.json();
+
+        console.log("Response data from Backend Login API:", data);
         if(data.success && data.user){
+
+
+            localStorage.setItem('user', JSON.stringify(data.user));
+    
+        // 🌟 YEH LOG ADD KAREIN: Dekhein ki token data ke andar aa bhi raha hai ya nahi
+      console.log("Token received inside data:", data.token);
 
             // const extractedRole = data.role || data.Role || data.user?.role || data.user?.Role || 'employee';
 
@@ -51,6 +65,12 @@ const navigate = useNavigate()
             //     officeId: data.user?.officeId || null 
             // };
             localStorage.setItem('user', JSON.stringify(data.user));
+
+            console.log("Token in storage right after saving:", localStorage.getItem('authToken'));
+            
+           if (data.token) {
+                localStorage.setItem('authToken', data.token); // 🌟 Crucial to bypass 401 errors
+            }
 
             setSuccessMessage('LoggedIn Successfully..');
             setLoading(false);
