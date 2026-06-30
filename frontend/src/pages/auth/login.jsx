@@ -26,7 +26,7 @@ const navigate = useNavigate()
      setLoading(true);
 
      try{
-        const response = await fetch('http://localhost:5001/api/auth/login',{
+        const response = await fetch('https://inventory-manage-q4yr.onrender.com/api/auth/login',{
             method: 'POST',
             headers:{
                 'Content-type': 'application/json' 
