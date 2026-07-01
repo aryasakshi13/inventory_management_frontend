@@ -218,7 +218,13 @@ const AddStockModel = ({ isOpen, onClose, userRole, currentOfficeId, onSuccess }
             if (purchaseFile) formData.append('purchaseCopy', purchaseFile);
             if (invoiceFile) formData.append('invoiceCopy', invoiceFile);
 
-            const response = await axios.post('https://inventory-manage-q4yr.onrender.com/api/inventry/add', formData, {
+               const baseUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:5001' 
+                : 'https://inventory-manage-q4yr.onrender.com';
+
+                const token = localStorage.getItem('authToken');
+
+            const response = await axios.post(`${baseUrl}/api/inventry/add`, formData, {
                 // headers: {
                 //     'Content-Type': 'multipart/form-data',
                 //     'x-user-role': userRole,
@@ -227,7 +233,8 @@ const AddStockModel = ({ isOpen, onClose, userRole, currentOfficeId, onSuccess }
                    
                 withCredentials: true,
                 headers: {
-                    'Content-Type': 'multipart/form-data'
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}`
                 }
 
             });
