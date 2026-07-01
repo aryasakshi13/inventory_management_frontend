@@ -51,6 +51,9 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
     useEffect(() => {
         const fetchSystemRegistries = async () => {
             try {
+                 
+                
+
                 const [itemsRes, empRes, officesRes] = await Promise.all([
                     axios.get('https://inventory-manage-q4yr.onrender.com/api/items', { withCredentials: true }),
                     axios.get('https://inventory-manage-q4yr.onrender.com/api/auth/employees?limit=500', { withCredentials: true }),
@@ -82,16 +85,16 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
         try {
             setIsLoadingLogs(true);
             
-            console.log("================ 🛠️ BRAND PROFILE CONTEXT AUDIT ================");
-            console.log("RAW PROP - userRole:", userRole, `(Type: ${typeof userRole})`);
-            console.log("RAW PROP - userOfficeId:", userOfficeId, `(Type: ${typeof userOfficeId})`);
-            console.log("STATE VARIABLE - currentSelectedOfficeId:", currentSelectedOfficeId);
+            // console.log("================ 🛠️ BRAND PROFILE CONTEXT AUDIT ================");
+            // console.log("RAW PROP - userRole:", userRole, `(Type: ${typeof userRole})`);
+            // console.log("RAW PROP - userOfficeId:", userOfficeId, `(Type: ${typeof userOfficeId})`);
+            // console.log("STATE VARIABLE - currentSelectedOfficeId:", currentSelectedOfficeId);
 
              const activeOfficeTarget = parseInt(userOfficeId || currentSelectedOfficeId || 0);
 
-             console.log("RESOLVED INTEGER FACILITY KEY (activeOfficeTarget):", activeOfficeTarget);
-            console.log("PAGE RENDER CONTEXT:", context);
-            console.log("================================================================");
+            //  console.log("RESOLVED INTEGER FACILITY KEY (activeOfficeTarget):", activeOfficeTarget);
+            // console.log("PAGE RENDER CONTEXT:", context);
+            // console.log("================================================================");
             
 
 
@@ -102,8 +105,14 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
 
                 // axios.get(`https://inventory-manage-q4yr.onrender.com/api/inventry/branch-stock/${userRole === 'branch admin' ? userOfficeId : currentSelectedOfficeId}`, { withCredentials: true }).catch(() => ({ data: { data: [] } }))
 
-             axios.get(`https://inventory-manage-q4yr.onrender.com/api/inventry/branch-stock/${userRole === 'branch admin' ? userOfficeId : 878}`, { withCredentials: true }).catch(() => ({ data: { data: [] } }))
-            ]);
+             axios.get(`https://inventory-manage-q4yr.onrender.com/api/inventry/branch-stock/${userRole === 'branch admin' ? userOfficeId : 878}`, { 
+                            headers: {
+                              'Authorization': `Bearer ${localStorage.getItem('authToken')}` // 🌟 Fix: This unblocks the stock layout verification!
+                             },
+                            
+                                withCredentials: true 
+                            }).catch(() => ({ data: { data: [] } }))
+                            ]);
 
             const rawTransfers = transferRes.data.transfers || transferRes.data.data || [];
 
@@ -221,7 +230,19 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
     const handleActionUpdateStatus = async (endpoint, batchId) => {
         try {
             setMsg({ type: '', text: '' });
-            const res = await axios.post(`https://inventory-manage-q4yr.onrender.com/api/inventry/${endpoint}`, { batchId }, { withCredentials: true });
+            
+            const token = localStorage.getItem('authToken');
+            const baseUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:5001' 
+                : 'https://inventory-manage-q4yr.onrender.com';
+
+            const res = await axios.post(`${baseUrl}/api/inventry/${endpoint}`, { batchId }, {
+                
+                headers: { 
+                    'Authorization': `Bearer ${token}` 
+                },
+                withCredentials: true 
+            });
             if (res.data.success) {
                 setMsg({ type: 'success', text: res.data.message });
                 syncActiveLedgers();

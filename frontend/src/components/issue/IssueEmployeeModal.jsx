@@ -529,8 +529,20 @@ const IssueEmployeeModal = ({
                 empId, 
                 empName 
             };
+             
+            const token = localStorage.getItem('authToken');
+            const baseUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:5001' 
+                : 'https://inventory-manage-q4yr.onrender.com';
 
-            const res = await axios.post('https://inventory-manage-q4yr.onrender.com/api/inventry/issue', payload, { withCredentials: true });
+
+            const res = await axios.post(`${baseUrl}/api/inventry/issue`, payload, { 
+                
+                headers: { 
+                    'Authorization': `Bearer ${token}` 
+                },
+                withCredentials: true 
+            });
             if (res.data.success) {
                 onActionSuccess();
                 onClose();

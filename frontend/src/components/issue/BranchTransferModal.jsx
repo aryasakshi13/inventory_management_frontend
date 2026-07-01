@@ -77,7 +77,23 @@ const BranchTransferModal = ({ isOpen, onClose, availableItems, availableOffices
                 courierName, 
                 courierDate 
             };
-            const res = await axios.post('https://inventory-manage-q4yr.onrender.com/api/inventry/issue', payload, { withCredentials: true });
+
+              const token = localStorage.getItem('authToken');
+              const baseUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:5001' 
+                : 'https://inventory-manage-q4yr.onrender.com';
+
+
+            const res = await axios.post(`${baseUrl}/api/inventry/issue`, payload, {
+                 
+                headers: {
+                    'Authorization': `Bearer ${token}`, // 🌟 Bypasses the 401 gatekeeper on /api/inventry/issue
+                    'Content-Type': 'application/json'
+                },
+
+                 withCredentials: true
+                
+                });
             if (res.data.success) {
                 onActionSuccess();
                 onClose();
