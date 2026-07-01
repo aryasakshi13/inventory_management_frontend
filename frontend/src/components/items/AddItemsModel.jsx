@@ -50,10 +50,21 @@ const AddItemClassModal = ({ isOpen, onClose, userRole, onSuccess }) => {
             setIsSubmitting(true);
             setErrorMessage('');
 
-            const response = await axios.post('https://inventory-manage-q4yr.onrender.com/api/items/add', {
+            const token = localStorage.getItem('authToken');
+
+            console.log("🔥 [AddItemClassModal] Token passing check:", token);
+
+            const baseUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:5001' 
+                : 'https://inventory-manage-q4yr.onrender.com';
+
+            const response = await axios.post(`${baseUrl}/api/items/add`, {
                 itemName: itemName.trim(),
                 category: category.trim()
             }, {
+                headers: {
+                    'Authorization': `Bearer ${token}` //  Yeh 401 gatekeeper ko bypass karega
+                },
                 withCredentials: true
             });
 
