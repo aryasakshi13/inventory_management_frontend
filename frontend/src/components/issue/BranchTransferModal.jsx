@@ -68,6 +68,7 @@ const BranchTransferModal = ({ isOpen, onClose, availableItems, availableOffices
             const payload = {
                 
                 issueType: 'branch', 
+                empId: 1,
                 itemName, 
                 qty: parseInt(qty), 
                 FromOfficeID:parseInt(finalFromOfficeID), 
