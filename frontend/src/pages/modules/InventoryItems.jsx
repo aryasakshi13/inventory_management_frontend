@@ -138,7 +138,7 @@ const InventoryItems = ({ user, userRole}) => {
             setIsLoading(true);
 
              const token = localStorage.getItem('authToken');
-             console.log( "Token is >>>", token);
+            //  console.log( "Token is >>>", token);
 
              if (!token) {
                 console.warn("⚠️ Auth Token storage mein nahi mila! Pehle Login kijiye.");
