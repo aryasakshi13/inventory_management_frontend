@@ -54,8 +54,14 @@ const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) =>
 
         try {
             setIsSubmitting(true);
+
+             const baseUrl = window.location.hostname === 'localhost'
+                  ? 'http://localhost:5001'                     // 💻 Local testing ke liye (Aapka backend port)
+                   : 'https://inventory-manage-q4yr.onrender.com';
+
+
             const res = await axios.post(
-                'https://inventory-manage-q4yr.onrender.com/api/branch/offices',
+                `${baseUrl}/api/branch/offices`,
                 formData,
                 { withCredentials: true }
             );
@@ -154,6 +160,23 @@ const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) =>
                                             {emp.EmpId} - {emp.Name}
                                         </option>
                                     ))} */}
+
+
+                                {employees && employees.length > 0 ? (
+                                        employees.map((emp) => {
+                                            // Safe profile object parameter evaluation
+                                            const currentEmpId = emp.EmpId || emp.empId || emp.ID || emp.id;
+                                            const currentEmpName = emp.Name || emp.name;
+                                            
+                                            return (
+                                                <option key={currentEmpId} value={currentEmpId}>
+                                                    {currentEmpId} - {currentEmpName}
+                                                </option>
+                                            );
+                                        })
+                                    ) : (
+                                        <option disabled>No employees loaded...</option>
+                               )}
                                 </select>
                         </div>
                         <div>
