@@ -362,17 +362,27 @@ const Dashboard = () => {
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-[#1E2943]">
+                {/* <div className="p-4 border-t border-[#1E2943]">
                     <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all">
                         <LogOut size={15} /> Sign Out Session
                     </button>
-                </div>
+                </div> */}
             </aside>
 
             {/* CONTENT AREA */}
             <div className="flex-1 flex flex-col min-w-0">
                 <header className="h-16 border-b border-[#1E2943] bg-[#131B2E]/40 flex items-center justify-between px-6 backdrop-blur-sm">
                     <h1 className="text-lg font-bold text-white">{activeTab}</h1>
+
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={handleLogout} // Calls your exact existing logout trigger function natively
+                            className="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 rounded-lg text-xs font-bold transition-all duration-200 active:scale-[0.97] cursor-pointer"
+                        >
+                            <LogOut size={13} />
+                            <span>Sign Out</span>
+                        </button>
+                    </div> 
                 </header>
 
                 <main className="p-6 md:p-8 flex-1 overflow-y-auto">
