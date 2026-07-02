@@ -357,9 +357,9 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
                                 </button>
                                 )} */}
 
-                                  <button type="button" onClick={() => {/* Add your Stock In handler function here when ready */}} className="h-9 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center gap-1.5 shadow-sm uppercase tracking-wider text-[10px] transition-colors">
+                                  {/* <button type="button" onClick={() => {}} className="h-9 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center gap-1.5 shadow-sm uppercase tracking-wider text-[10px] transition-colors">
                                     Stock In
-                                </button>
+                                </button> */}
                                 
                                 <button type="button" onClick={() => setShowBranchModal(true)} className="h-9 px-3.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl flex items-center gap-1.5 shadow-sm uppercase tracking-wider text-[10px] transition-colors">
                                     Stock Out
