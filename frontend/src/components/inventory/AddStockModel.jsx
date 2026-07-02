@@ -51,7 +51,7 @@ const AddStockModel = ({ isOpen, onClose, userRole, currentOfficeId, onSuccess }
 
               const [itemsRes, officesRes, vendorsRes] = await Promise.all([
                 axios.get('https://inventory-manage-q4yr.onrender.com/api/items'),
-                axios.get('https://inventory-manage-q4yr.onrender.com/api/branch'),
+                axios.get('https://inventory-manage-q4yr.onrender.com/api/branch?limit=1000'),
                 axios.get('https://inventory-manage-q4yr.onrender.com/api/vendor?limit=1000')
 
 
