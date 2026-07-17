@@ -156,6 +156,8 @@ const InventoryTable = ({ data, loading, userRole,onViewClick, inventoryTab, onE
                             )}
                            {normalRole === 'admin' && <th className="py-4 px-4 select-none">Office Name</th>}
 
+                        
+
                            <th className="py-4 px-4 select-none">Created By</th>
                             <th className="py-4 px-4 text-center select-none">Quantity</th>
                                

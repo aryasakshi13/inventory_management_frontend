@@ -203,6 +203,9 @@ const Dashboard = () => {
         //     role: selectedRole
         // };
 
+
+        console.log("🔥 [handleFormSubmit] Form submission triggered. Mode:", modalMode, "EmpId:", empId, "Name:", name, "Email:", email, "Role:", selectedRole, "OfficeID:", selectedOfficeId);
+
             const payload = modalMode === 'add'
             ? {
                   name: name.trim(),
@@ -211,7 +214,8 @@ const Dashboard = () => {
                   role: selectedRole,
                   OfficeID: selectedOfficeId || null
               }
-            : {
+            : {    
+                  name: name.trim(),
                   EmpId: empId.trim(),
                   password,
                   role: selectedRole,
@@ -219,11 +223,18 @@ const Dashboard = () => {
               };
  
 
+            //   console.log("🔥 [handleFormSubmit] Payload being sent to backend:", payload);
+
 
         try {
             const endpoint = modalMode === 'add' ? '/api/auth/add-employee' : '/api/auth/update-credentials';
             
-            const response = await fetch(`https://inventory-manage-q4yr.onrender.com${endpoint}`, {
+            // const response = await fetch(`https://inventory-manage-q4yr.onrender.com${endpoint}`, {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify(payload)
+            // });
+            const response = await fetch(`http://localhost:5001${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -288,6 +299,9 @@ const Dashboard = () => {
 
 
      const triggerAssignModal = (employee) => {
+
+        console.log("🔥 [triggerAssignModal] Employee object received:", employee);
+
         setModalMode('assign');
         setEmpId(employee.EmpId);
         setName(employee.Name);
@@ -310,12 +324,12 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0B0F19] text-slate-100 flex antialiased relative overflow-hidden">
+        <div className="min-h-screen bg-white text-black-100 flex antialiased relative overflow-hidden">
             <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
 
             {/* SIDEBAR COMPONENT */}
-            <aside className="w-64 bg-[#131B2E]/90 border-r border-[#1E2943] backdrop-blur-md hidden md:flex flex-col">
-                <div className="h-16 flex items-center px-6 border-b border-[#1E2943] gap-3">
+            <aside className="w-64 flex-shrink-0 bg-white border-r border-gray-200 backdrop-blur-md hidden md:flex flex-col sticky top-0 h-screen overflow-y-auto">
+                <div className="h-16 flex items-center px-6 border-b border-gray-200 gap-3">
                     {/* <Layers className="w-5 h-5 text-blue-400" /> */}
                      
                      <img 
@@ -327,17 +341,21 @@ const Dashboard = () => {
                     {/* <span className="font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
                        Accuprobe <span className="text-blue-500 text-xs font-semibold">Pro</span>
                     </span> */}
-                    <span className="font-bold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent text-base">
+                    {/* <span className="font-bold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent text-base">
+                        Accuprobe
+                    </span> */}
+
+                    <span className="font-bold tracking-tight text-gray-900 text-base">
                         Accuprobe
                     </span>
 
                 </div>
 
-                <div className="px-4 py-3 mx-3 my-4 bg-[#0B0F19]/60 border border-[#1E2943] rounded-xl flex items-center gap-3">
+                <div className="px-4 py-3 mx-3 my-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center gap-3">
                     <ShieldCheck size={16} className="text-blue-400" />
                     <div className="flex flex-col min-w-0 text-xs">
-                        <span className="text-slate-400 font-medium truncate">{user.email || user.Mail}</span>
-                        <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider mt-0.5">{user.role} ACCESS</span>
+                        <span className="text-gray-700 font-medium truncate">{user.email || user.Mail}</span>
+                        <span className="text-[10px] text-amber-600 font-bold uppercase tracking-wider mt-0.5">{user.role} ACCESS</span>
                     </div>
                 </div>
 
@@ -352,7 +370,7 @@ const Dashboard = () => {
                                 key={item.name}
                                 onClick={() => setActiveTab(item.name)}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${
-                                    isActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10' : 'text-slate-400 hover:text-slate-200 hover:bg-[#1E2943]/50'
+                                    isActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10' : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
                                 }`}
                             >
                                 <Icon size={16} />
@@ -371,8 +389,8 @@ const Dashboard = () => {
 
             {/* CONTENT AREA */}
             <div className="flex-1 flex flex-col min-w-0">
-                <header className="h-16 border-b border-[#1E2943] bg-[#131B2E]/40 flex items-center justify-between px-6 backdrop-blur-sm">
-                    <h1 className="text-lg font-bold text-white">{activeTab}</h1>
+                <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6 backdrop-blur-sm">
+                    <h1 className="text-lg font-bold text-gray-900">{activeTab}</h1>
 
                     <div className="flex items-center gap-4">
                         <button 
@@ -399,7 +417,7 @@ const Dashboard = () => {
                             <BranchMaster
                                 user={user} 
                                 userRole={userRole} 
-                                employees={employees}
+                                // employees={employees}
                             />
    
                         )}
@@ -429,12 +447,12 @@ const Dashboard = () => {
                          {activeTab === 'Vendors Control' && <VendorsDirectory userRole={userRole} />} 
 
 
-                    {activeTab === 'Employee Master' && userRole === 'admin' ? (
+                    {activeTab === 'Employee Master' && userRole === 'admin'  && (
                         <div className="space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#131B2E]/40 p-4 border border-[#1E2943] rounded-xl">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
                                 <div>
-                                    <h2 className="text-md font-bold text-white">Personnel Directory Registry</h2>
-                                    <p className="text-xs text-slate-400 mt-0.5">Activate credential keys or log clean operational profiles directly into the database.</p>
+                                    <h2 className="text-md font-bold text-gray-900">Personnel Directory Registry</h2>
+                                    <p className="text-xs text-gray-600  mt-0.5">Activate credential keys or log clean operational profiles directly into the database.</p>
                                 </div>
                                 <button 
                                     onClick={triggerAddModal}
@@ -446,8 +464,9 @@ const Dashboard = () => {
 
                             
 
-                            <div className="bg-[#131B2E]/60 border border-[#1E2943] rounded-xl overflow-hidden shadow-xl">
-                                <div className="p-4 border-b border-[#1E2943] bg-[#0B0F19]/30 text-slate-400 font-bold text-[11px] tracking-wider grid grid-cols-12 hidden md:grid">
+                            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                <div className="p-4 border-b border-gray-200 bg-gray-50  text-gray-700 font-bold text-[11px] tracking-wider grid grid-cols-12 hidden md:grid">
+                                 
                                     <div className="col-span-2">Employee ID</div>
                                     <div className="col-span-2">Full Name</div>
                                     <div className="col-span-3">Email Id</div>
@@ -457,7 +476,7 @@ const Dashboard = () => {
                                    <div className="col-span-1 text-right">Actions</div>
                                 </div>
 
-                                <div className="divide-y divide-[#1E2943]">
+                                <div className="divide-y divide-gray-200">
                                     {employees.map((emp) =>{
                                       
                                       const empRole = (emp.role || emp.Role || 'employee').toLowerCase();
@@ -466,19 +485,19 @@ const Dashboard = () => {
                                       const empStatus = (rawStatus == 1 || String(rawStatus).toLowerCase().trim() === 'active') ? 'active' : 'inactive';
 
                                       return (
-                                        <div key={emp.EmpId} className="p-4 grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-0 items-center text-xs hover:bg-[#1E2943]/20 transition-colors">
-                                            <div className="col-span-2 font-mono text-blue-400 font-bold">{emp.EmpId}</div>
-                                            <div className="col-span-2 font-semibold text-slate-200">{emp.Name}</div>
-                                            <div className="col-span-3 text-slate-400 truncate">{emp.Mail}</div>
+                                        <div key={emp.EmpId} className="p-4 grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-0 items-center text-xs hover:bg-gray-50 transition-colors">
+                                            <div className="col-span-2 font-mono text-blue-600 font-bold">{emp.EmpId}</div>
+                                            <div className="col-span-2 font-semibold text-gray-900 break-words">{emp.Name}</div>
+                                            <div className="col-span-3 text-gray-900 break-all">{emp.Mail}</div>
                                             
-                                             <div className="col-span-2 text-slate-400 truncate">{emp.OfficeName || <span className="italic">Unassigned</span>}</div>
+                                             <div className="col-span-2 text-gray-900 truncate">{emp.OfficeName || <span className="italic">Unassigned</span>}</div>
                                             
 
                                             <div className="col-span-1">
                                                 <span className={` inline-block whitespace-nowrap px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                                                     empRole === 'admin' ? 'bg-rose-500/10 border border-rose-500/20 text-rose-400' :
                                                     empRole === 'branch admin' ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' :
-                                                    'bg-slate-500/10 border border-slate-500/20 text-slate-400'
+                                                    'bg-gray-100 border border-gray-300 text-gray-700'
                                                 }`}>
                                                     {empRole}
                                                 </span>
@@ -534,7 +553,7 @@ const Dashboard = () => {
                                               {/* 👁️ VIEW BUTTON */}
                                                     <button 
                                                         onClick={() => triggerViewModal(emp)}
-                                                        className="px-1.5 py-1 border border-[#1E2943] hover:border-emerald-500/40 bg-[#0B0F19]/40 hover:bg-emerald-600/10 text-slate-300 hover:text-emerald-400 rounded-md transition-all flex items-center gap-1 font-medium"
+                                                        className="px-1.5 py-1 border border-gray-300 hover:border-emerald-500 bg-white hover:bg-emerald-50 text-gray-700 hover:text-emerald-600 rounded-md transition-all flex items-center gap-1 font-medium"
                                                     >
                                                         <Eye size={12} /> 
                                                     </button>
@@ -542,7 +561,7 @@ const Dashboard = () => {
                                                         {/* ✏️ EDIT BUTTON (Triggers your existing credential modal) */}
                                                     <button 
                                                             onClick={() => triggerAssignModal(emp)}
-                                                           className="px-1.5 py-1 border border-[#1E2943] hover:border-blue-500/40 bg-[#0B0F19]/40 hover:bg-blue-600/10 text-slate-300 hover:text-blue-400 rounded-md transition-all flex items-center gap-1 font-medium"
+                                                           className="px-1.5 py-1 border border- hover:border-blue-500 bg-white hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-md transition-all flex items-center gap-1 font-medium"
                                                         >
                                                             <Edit3 size={12} /> 
                                                     </button>
@@ -555,16 +574,16 @@ const Dashboard = () => {
 
 
                                  
-                                 <div className="p-4 border-t border-[#1E2943] bg-[#0B0F19]/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+                                 <div className="p-4 border-t border-gray-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-700">
                                     <div>
-                                        Page <span className="text-blue-400 font-bold">{currentPage}</span> of <span className="text-slate-200 font-semibold">{totalPages}</span>
+                                        Page <span className="text-blue-400 font-bold">{currentPage}</span> of <span className="text-gray-900 font-semibold">{totalPages}</span>
                                     </div>
                                     <div className="flex gap-2 w-full sm:w-auto justify-end">
                                           <button 
                                             type="button"
                                             disabled={currentPage === 1}
                                             onClick={() => setCurrentPage(1)}
-                                            className="px-2.5 py-1.5 border border-[#1E2943] rounded-md bg-[#0B0F19] hover:bg-[#1E2943] text-slate-300 disabled:opacity-20 disabled:pointer-events-none transition-colors font-medium"
+                                            className="px-2.5 py-1.5 border border-gray-300 rounded-md bg-white hover:bg-gray-100 text-gray-700 disabled:opacity-20 disabled:pointer-events-none transition-colors font-medium"
                                             title="First Page"
                                         >
                                             First
@@ -574,7 +593,7 @@ const Dashboard = () => {
                                             type="button"
                                             disabled={currentPage === 1}
                                             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                            className="px-3.5 py-2 border border-[#1E2943] rounded-lg bg-[#0B0F19] hover:bg-[#1E2943] text-slate-200 disabled:opacity-30 disabled:pointer-events-none transition-all font-semibold active:scale-[0.98]"
+                                            className="px-3.5 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-100 text-gray-700 disabled:opacity-30 disabled:pointer-events-none transition-all font-semibold active:scale-[0.98]"
                                         >
                                             Prev
                                         </button>
@@ -616,11 +635,8 @@ const Dashboard = () => {
 
                             </div>
                         </div>
-                    ) : (
-                        <div className="text-slate-500 text-xs text-center border border-dashed border-[#1E2943] py-20 rounded-2xl bg-[#131B2E]/10">
-                            Operational Panel Tab View Environment Active.
-                        </div>
-                    )}
+                    )
+                    }
                 </main>
             </div>
 

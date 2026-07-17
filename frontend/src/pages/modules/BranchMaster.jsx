@@ -1,35 +1,49 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Building2, Plus, RefreshCw } from 'lucide-react';
+import { Building2, Plus, RefreshCw, Search } from 'lucide-react';
 // import AddBranchModal from './AddBranchModal';
 import AddBranchModal from '../../components/branch/AddbranchModel';
 
-const BranchMaster = ({ userRole, employees = [] }) => {
+const BranchMaster = ({ userRole, fetchDatabaseRegistry }) => {
     const [offices, setOffices] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
 
-     const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalRows, setTotalRows] = useState(0);
     const [rowsPerPage] = useState(10);
+    const [employees, setEmployees] = useState([]);
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+
+    // console.log(search);
+
+    useEffect(() => {
+    const timer = setTimeout(() => {
+        setDebouncedSearch(search);
+        setCurrentPage(1); // Optional: reset to first page on new search
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+}, [search]);
 
     const fetchOffices = useCallback(async () => {
         try {
             setIsLoading(true);
-            const res = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/branch?page=${currentPage}&limit=${rowsPerPage}`, { withCredentials: true });
+            const res = await axios.get(`http://localhost:5001/api/branch?page=${currentPage}&limit=${rowsPerPage}&search=${debouncedSearch}`, { withCredentials: true });
             console.log(res.data);
             if (res.data.success) {
                 setOffices(res.data.data || []);
-                 setTotalPages(res.data.pagination?.totalPages || 1);
-                 setTotalRows(res.data.pagination?.totalRows || 0);
+                setTotalPages(res.data.pagination?.totalPages || 1);
+                setTotalRows(res.data.pagination?.totalRows || 0);
             }
         } catch (err) {
             console.error("Failed to fetch offices:", err);
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, rowsPerPage]);
+    }, [currentPage, rowsPerPage,debouncedSearch]);
 
     useEffect(() => {
         fetchOffices();
@@ -43,21 +57,35 @@ const BranchMaster = ({ userRole, employees = [] }) => {
         }
     };
 
-     const getVisiblePageNumbers = () => {
+    const getVisiblePageNumbers = () => {
         const pages = [];
         const maxVisible = 5;
         let start = Math.max(1, currentPage - 2);
         let end = Math.min(totalPages, start + maxVisible - 1);
- 
+
         if (end - start < maxVisible - 1) {
             start = Math.max(1, end - maxVisible + 1);
         }
- 
+
         for (let i = start; i <= end; i++) {
             pages.push(i);
         }
         return pages;
     };
+
+
+    const getAllEmployees = async () => {
+        const result = await axios.get(`http://localhost:5001/api/auth/employees`);
+        setEmployees(result.data.data || []);
+    }
+
+    useEffect(() => {
+        if (userRole === 'admin') {
+            getAllEmployees()
+        }
+    }, [userRole]);
+
+
 
     return (
         <div className="space-y-4 bg-gray-50 p-2 text-xs text-gray-600 font-semibold text-left w-full">
@@ -76,6 +104,34 @@ const BranchMaster = ({ userRole, employees = [] }) => {
                     </div>
 
                     <div className="flex items-center gap-2 self-end sm:self-auto">
+
+                         {/* Search Bar */}
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search office..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            fetchOffices();
+                                        }
+                                    }}
+                                    className="h-9 w-48 px-3 pr-8 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+
+                                {search && (
+                                    <button
+                                        onClick={() => {
+                                            setSearch("");
+                                            fetchOffices();
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div> 
                         <button onClick={fetchOffices} className="p-2 border border-gray-200 hover:bg-gray-50 rounded-lg text-gray-500 transition-colors">
                             <RefreshCw size={12} />
                         </button>
@@ -119,7 +175,7 @@ const BranchMaster = ({ userRole, employees = [] }) => {
                                         <td className="p-4 pl-6 font-mono text-blue-600 font-bold text-[11px] whitespace-nowrap">
                                             {office.OfficeCode}
                                         </td>
-                                        <td className="p-4 font-extrabold uppercase text-gray-900 whitespace-nowrap">
+                                        <td className="p-4 font-mono uppercase text-gray-900 whitespace-nowrap">
                                             {office.OfficeName}
                                         </td>
                                         <td className="p-4 text-gray-600 max-w-xs truncate" title={office.OfficeAddress || ''}>
@@ -169,11 +225,10 @@ const BranchMaster = ({ userRole, employees = [] }) => {
                                         key={pageNumber}
                                         type="button"
                                         onClick={() => setCurrentPage(pageNumber)}
-                                        className={`w-7 h-7 rounded-md border text-center transition-all font-bold text-[10px] ${
-                                            currentPage === pageNumber
+                                        className={`w-7 h-7 rounded-md border text-center transition-all font-bold text-[10px] ${currentPage === pageNumber
                                                 ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                                                 : 'border-gray-200 bg-white hover:bg-gray-100 text-gray-600'
-                                        }`}
+                                            }`}
                                     >
                                         {pageNumber}
                                     </button>
@@ -209,6 +264,7 @@ const BranchMaster = ({ userRole, employees = [] }) => {
                     onClose={() => setShowAddModal(false)}
                     employees={employees}
                     onActionSuccess={fetchOffices}
+                    fetchDatabaseRegistry={fetchDatabaseRegistry}
                 />
             )}
         </div>

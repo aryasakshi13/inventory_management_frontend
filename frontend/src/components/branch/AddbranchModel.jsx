@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { X } from 'lucide-react';
 
+
+
 const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) => {
     const [formData, setFormData] = useState({
         OfficeCode: '',
@@ -13,6 +15,8 @@ const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) =>
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    // const [searchOffice, setSearchOffice] = useState("");
 
     if (!isOpen) return null;
 
@@ -77,6 +81,10 @@ const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) =>
         }
     };
 
+//     console.log("Employees:", employees);
+//    console.log("Employees Count:", employees?.length);
+
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
@@ -116,7 +124,7 @@ const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) =>
                             <input
                                 type="text"
                                 name="OfficeName"
-                                value={formData.OfficeName}
+                                value={formData.OfficeName}       
                                 onChange={handleChange}
                                 placeholder="e.g. Delhi Branch Office"
                                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -135,6 +143,9 @@ const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) =>
                             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
+
+                         
+                         
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -155,18 +166,14 @@ const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) =>
                                     className="w-full border border-gray-200 bg-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-700"
                                 >
                                     <option value="">-- Select Registered Admin --</option>
-                                    {/* {employees.map((emp) => (
-                                        <option key={emp.EmpId} value={emp.EmpId}>
-                                            {emp.EmpId} - {emp.Name}
-                                        </option>
-                                    ))} */}
-
-
-                                {employees && employees.length > 0 ? (
+                                    
+ 
+                                   {employees && employees.length > 0 ? (
                                         employees.map((emp) => {
                                             // Safe profile object parameter evaluation
                                             const currentEmpId = emp.EmpId || emp.empId || emp.ID || emp.id;
                                             const currentEmpName = emp.Name || emp.name;
+ 
                                             
                                             return (
                                                 <option key={currentEmpId} value={currentEmpId}>

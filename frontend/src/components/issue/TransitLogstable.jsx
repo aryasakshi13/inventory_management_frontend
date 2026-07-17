@@ -26,8 +26,8 @@ const TransitLogsTable = ({ data, userRole, availableOffices = [], availableItem
                         <th className="p-4 pl-6">ID / Batch Code</th>
                         {/* {isAdmin && <th className="p-4">From Office Name</th>} */}
 
-                        {!isApprovalView && <th className="p-4">From Office Name</th>}
-                        <th className="p-4">To Office Name</th>
+                        <th className="p-4">From Office Name</th>
+                        {!isApprovalView && <th className="p-4">To Office Name</th>}
                         <th className="p-4">Item Name</th>
                         <th className="p-4 text-center">Quantity</th>
 
@@ -107,16 +107,16 @@ const TransitLogsTable = ({ data, userRole, availableOffices = [], availableItem
                                 {/* From Office Name */}
                                 {/* {isAdmin && ( */}
 
-                                 {!isApprovalView && (
+                               
                                     <td className="p-4 font-extrabold uppercase text-gray-900 whitespace-nowrap">
                                         {resolvedFromBranch}
                                     </td>
-                                )}
+                              
 
                                 {/* To Office Name */}
-                                <td className="p-4 font-extrabold uppercase text-gray-900 whitespace-nowrap">
+                                  {!isApprovalView && ( <td className="p-4 font-extrabold uppercase text-gray-900 whitespace-nowrap">
                                     {resolvedToBranch}
-                                </td>
+                                </td>  )}
 
                                 {/* Item Name resolved via master lookup dictionary */}
                                 <td className="p-4 font-black uppercase text-gray-900 tracking-wide whitespace-nowrap">
