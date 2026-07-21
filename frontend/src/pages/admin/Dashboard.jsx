@@ -234,7 +234,8 @@ const Dashboard = () => {
             //     headers: { 'Content-Type': 'application/json' },
             //     body: JSON.stringify(payload)
             // });
-            const response = await fetch(`http://localhost:5001${endpoint}`, {
+            // const response = await fetch(`http://localhost:5001${endpoint}`, {
+            const response = await fetch(`https://inventory-manage-q4yr.onrender.com${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

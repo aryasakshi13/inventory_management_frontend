@@ -11,7 +11,9 @@ const InventoryItems = ({ user, userRole}) => {
     const [isLoading, setIsLoading] = useState(true);
     const [inventoryTab, setInventoryTab] = useState('purchased');
 
-    const [groupedStockList, setGroupedStockList] = useState([]); 
+    const [groupedStockList, setGroupedStockList] = useState([]);
+    
+    // console.log("Group stock list",groupedStockList);
     
 
       // 🔢 PAGINATION STATE CONTROLLERS
@@ -36,95 +38,87 @@ const InventoryItems = ({ user, userRole}) => {
     //     setIsViewModalOpen(true);
     // };
 
-    const groupInventoryByPO = (rawData) => {
-       const groups = {};
+//     const groupInventoryByPO = (rawData) => {
+//        const groups = {};
 
-        rawData.forEach(row => {
-            // const po = row.purchase_no || 'NO-PO';
-            // if (!groups[po]) {
-            //     groups[po] = {
-            //         ...row,
-            //         // Keep track of all sub-items inside this batch order
-            //         allItems: [], 
-            //         totalQuantity: 0
-            //     };
-            // }
-            // groups[po].allItems.push({
-            //     id: row.id,
-            //     itemName: row.item,
-            //     category: row.Category,
-            //     quantity: parseInt(row.Quantity) || 0,
-            //     unitCost: row.unit_cost
-            // });
-            // groups[po].totalQuantity += parseInt(row.Quantity) || 0;
+//         rawData.forEach(row => {
 
-             // 🟢 FIXED: If it's a branch transit (no purchase number), group by its unique ID so it doesn't get merged!
-        // const isTransit = !row.purchase_no || 
-        //                   row.purchase_no.trim() === '' || 
-        //                   row.purchase_no.trim() === '—' || 
-        //                   row.purchase_no.trim() === '-';
-
-
-        //   const hasValidPO = row.purchase_no && 
-        //                        String(row.purchase_no).trim() !== '' && 
-        //                        String(row.purchase_no).trim() !== '—' && 
-        //                        String(row.purchase_no).trim() !== '-';
-                          
-
-
-
-
-        // Use purchase_no for purchases, but separate rows by their unique s.id for branch transfers
-        // const groupingKey = isTransit ? `TRANSIT-${row.id}` : row.purchase_no;
-        // const groupingKey = hasValidPO ? String(row.purchase_no).trim() : `TRANSIT-ROW-REF-${row.id}`;
-
-
-        // const isTransfer = row.source_type === 'transfer';
-        // const rawPo = row.purchase_no ? String(row.purchase_no).trim() : '';
-        // const isBlankPO = rawPo === '' || rawPo === '—' || rawPo === '-';
-
-          const rawPo = row.purchase_no ? String(row.purchase_no).trim() : '';
-        const isBlankPO = rawPo === '' || rawPo === '—' || rawPo === '-';
+//           const rawPo = row.purchase_no ? String(row.purchase_no).trim() : '';
+//         const isBlankPO = rawPo === '' || rawPo === '—' || rawPo === '-';
         
-        // 🎯 BULLETPROOF DETECTOR: It's a transfer if source_type says so, 
-        // OR if the PO number explicitly starts with "TRANSFER_"
-        // const isTransfer = row.source_type === 'transfer' || rawPo.toUpperCase().startsWith('TRANSFER_');
+//         // 🎯 BULLETPROOF DETECTOR: It's a transfer if source_type says so, 
+//         // OR if the PO number explicitly starts with "TRANSFER_"
+//         // const isTransfer = row.source_type === 'transfer' || rawPo.toUpperCase().startsWith('TRANSFER_');
          
-        const isTransfer = String(row.source_type).toLowerCase() === 'transfer' || 
-                           rawPo.toUpperCase().startsWith('TRANSFER');
+//         const isTransfer = String(row.source_type).toLowerCase() === 'transfer' || 
+//                            rawPo.toUpperCase().startsWith('TRANSFER');
 
 
-        const groupingKey = isTransfer 
-            ? `TRANSIT-ROW-REF-${row.id}`  // If it's a transfer, keep it isolated by its row ID
-            : isBlankPO 
-                ? `DIRECT-BATCH-ID-${row.id}` // If it's a purchase but has no PO, keep it separate by its row ID
-                : rawPo;
+//         const groupingKey = isTransfer 
+//             ? `TRANSIT-ROW-REF-${row.id}`  // If it's a transfer, keep it isolated by its row ID
+//             : isBlankPO 
+//                 ? `DIRECT-BATCH-ID-${row.id}` // If it's a purchase but has no PO, keep it separate by its row ID
+//                 : rawPo;
 
-        if (!groups[groupingKey]) {
-            groups[groupingKey] = {
-                ...row,
+//         if (!groups[groupingKey]) {
+//             groups[groupingKey] = {
+//                 ...row,
 
-                source_type: isTransfer ? 'transfer' : 'purchase',
-                allItems: [], 
-                totalQuantity: 0
-            };
-        }
+//                 source_type: isTransfer ? 'transfer' : 'purchase',
+//                 allItems: [], 
+//                 totalQuantity: 0
+//             };
+//         }
         
-        groups[groupingKey].allItems.push({
-            id: row.id,
-            itemName: row.item,
-            category: row.Category,
-            quantity: parseInt(row.Quantity) || 0,
-            unitCost: row.unit_cost,
-             purchase_no: row.purchase_no, // 🎯 PRESERVE CHILD PERMISSIONS
-             source_type: row.source_type 
-        });
+//         groups[groupingKey].allItems.push({
+//             id: row.id,
+//             itemName: row.item,
+//             category: row.Category,
+//             quantity: parseInt(row.Quantity) || 0,
+//             unitCost: row.unit_cost,
+//              purchase_no: row.purchase_no, // 🎯 PRESERVE CHILD PERMISSIONS
+//              source_type: row.source_type 
+//         });
         
-        groups[groupingKey].totalQuantity += parseInt(row.Quantity) || 0;
+//         groups[groupingKey].totalQuantity += parseInt(row.Quantity) || 0;
 
-        });
+//         });
 
-        return Object.values(groups);
+//         return Object.values(groups);
+// };
+
+
+const groupInventoryByPO = (rawData) => {
+  const groups = {};
+
+  rawData.forEach((row) => {
+    const purchaseNo = String(row.purchase_no || "").trim();
+
+    // If purchase_no is empty, keep this row separate
+    const key = purchaseNo ? purchaseNo : `ROW-${row.id}`;
+
+    if (!groups[key]) {
+      groups[key] = {
+        ...row,
+        allItems: [],
+        totalQuantity: 0,
+      };
+    }
+
+    groups[key].allItems.push({
+      id: row.id,
+      itemName: row.item,
+      category: row.Category,
+      quantity: Number(row.Quantity) || 0,
+      unitCost: row.unit_cost,
+      purchase_no: row.purchase_no,
+      source_type: row.source_type,
+    });
+
+    groups[key].totalQuantity += Number(row.Quantity) || 0;
+  });
+
+  return Object.values(groups);
 };
 
 // 🟢 HOW TO USE IT IN YOUR FETCH EFFECT:
@@ -156,18 +150,14 @@ const InventoryItems = ({ user, userRole}) => {
             //  const response = await axios.get(`http://localhost:5001/api/inventry?page=1&limit=50`, {
                  const response = await axios.get(`${baseUrl}/api/inventry?page=1&limit=50`, {
 
-                // headers: {
-                //     'x-user-role': userRole,
-                //     'x-user-office-id': userBranchId
-                // },
-
                 headers: {
                     'Authorization': `Bearer ${token}` 
                 },
                   withCredentials: true
             });
 
-
+             
+             console.log("Stock data",response.data);
             
             if (response.data.success) {
                 const rawRows = response.data.data || [];
@@ -176,6 +166,7 @@ const InventoryItems = ({ user, userRole}) => {
 
 
                  const processedBatches = groupInventoryByPO(rawRows);
+
 
                    console.log("🔥 FRONTEND RECEIVED GROUPS:", processedBatches);
                     setGroupedStockList(processedBatches);
@@ -297,35 +288,11 @@ const InventoryItems = ({ user, userRole}) => {
             {/* UNIFIED CONTAINER FOR TABLE & PAGINATION FOOTER */}
             <div className="w-full bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
 
-            {/* PRESENTATION DATA GRID VIEW */}
-            {/* <InventoryTable 
-                // data={stockList} 
-                 data={groupedStockList.filter(row => {
-                        const hasPO = row.purchase_no && 
-                                      row.purchase_no.trim() !== '' && 
-                                      row.purchase_no.trim() !== '—' && 
-                                      row.purchase_no.trim() !== '-';
-                        return inventoryTab === 'purchased' ? hasPO : !hasPO;
-                    })}
-
-                loading={isLoading} 
-                userRole={userRole}
-                 inventoryTab={inventoryTab}
-                onViewClick={handleViewItem}
-                onEditClick={handleAdjustStockTrigger} 
-            />
-
-             */}
+       
 
                <InventoryTable 
                 data={groupedStockList.filter(row => {
-                    // 🎯 FIX: Route rows using source_type instead of checking if purchase_no exists
-                    // return inventoryTab === 'purchased' 
-                    //     ? row.source_type === 'purchase' 
-                    //     : row.source_type === 'transfer';
-
-                        //  const isOwnBranchStock = parseInt(row.officeId) === parseInt(userBranchId);
-                          
+                   
                         const currentRole = String(userRole).toLowerCase();
                          const isOwnBranch = parseInt(row.officeId) === parseInt(userBranchId);
 
@@ -335,8 +302,7 @@ const InventoryItems = ({ user, userRole}) => {
                                               (row.allItems && row.allItems.some(item => 
                                                   String(item.purchase_no || '').toUpperCase().startsWith('TRANSFER')
                                               )); 
-                        // const isActualTransfer = row.source_type === 'transfer' || rawPo.startsWith('TRANSFER');
-                        
+                       
                         const isActualTransfer = row.source_type === 'transfer' || hasTransferPO;
 
                         const isPurchase = !isActualTransfer;

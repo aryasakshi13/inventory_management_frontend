@@ -17,8 +17,8 @@ const EmployeeAllocationTable = ({ data }) => {
                     <tr className="bg-gray-50 text-gray-400 border-b border-gray-200 font-black text-[9px] uppercase tracking-wider">
                         <th className="p-4 pl-6 flex items-center gap-1"><Hash size={11} /> Allocation ID</th>
                         <th className="p-4">Personnel Profile</th>
-                        <th className="p-4">Assigned  Node</th>
-                        <th className="p-4">Item Model SpecifiOfficecation</th>
+                        <th className="p-4">Office Name</th>
+                        <th className="p-4">Item Name</th>
                         <th className="p-4 text-center">Units Issued</th>
                         <th className="p-4 pr-6">Timestamp Released</th>
                     </tr>
@@ -39,10 +39,13 @@ const EmployeeAllocationTable = ({ data }) => {
                                 <div className="text-[9px] text-gray-400 font-mono mt-0.5">ID Ref: #{row.EmpID}</div>
                             </td>
 
+
+                            {console.log("rowasdasdhkwhdjgdwejhdgjqwhdwhqjdfwdhfwqdqwfj", row)}
+
                             {/* Column 3: Office Node details */}
                             <td className="p-4">
-                                <div className="text-gray-800 font-bold">Office ID: {row.OfficeID}</div>
-                                <div className="text-[9px] text-gray-400 font-mono uppercase mt-0.5">Code: {row.OfficeCode || 'N/A'}</div>
+                                <div className="text-gray-800 font-bold">{row.OfficeName || 'N/A'}</div>
+                                {/* <div className="text-[9px] text-gray-400 font-mono uppercase mt-0.5">Code: {row.OfficeCode || 'N/A'}</div> */}
                             </td>
 
                             {/* Column 4: Product Description String */}

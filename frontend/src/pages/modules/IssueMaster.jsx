@@ -13,11 +13,11 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
 
 
 
-    // 🛑 TEMP DEBUG GROUP — ADD THIS HERE:
-    console.group("🕵️‍♂️ OFFICE ID TRACE AUDIT");
-    console.log("1. Received prop 'userOfficeId':", userOfficeId, `(Type: ${typeof userOfficeId})`);
-    console.log("2. Window LocalStorage raw 'user':", window.localStorage.getItem('user'));
-    console.groupEnd();
+    // // 🛑 TEMP DEBUG GROUP — ADD THIS HERE:
+    // console.group("🕵️‍♂️ OFFICE ID TRACE AUDIT");
+    // console.log("1. Received prop 'userOfficeId':", userOfficeId, `(Type: ${typeof userOfficeId})`);
+    // console.log("2. Window LocalStorage raw 'user':", window.localStorage.getItem('user'));
+    // console.groupEnd();
 
 
     // Shared state engines
@@ -45,32 +45,29 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
         if (forcedInitialTab) {
             setActiveSubTab(forcedInitialTab);
         }
-    }, [forcedInitialTab]);
+    }, [forcedInitialTab]);                             
 
     // Sync static lookup lists once on initialization
     useEffect(() => {
         const fetchSystemRegistries = async () => {
             try {
                  
-                
+               
 
                 const [itemsRes, empRes, officesRes] = await Promise.all([
+                  //  axios.get('https://inventory-manage-q4yr.onrender.com/api/items', { withCredentials: true }),
                     axios.get('https://inventory-manage-q4yr.onrender.com/api/items', { withCredentials: true }),
                     axios.get('https://inventory-manage-q4yr.onrender.com/api/auth/employees?limit=500', { withCredentials: true }),
                     axios.get('https://inventory-manage-q4yr.onrender.com/api/branch?limit=1000', { withCredentials: true })
                 ]);
+
+
+                console.log("================ 🛠️ SYSTEM REGISTRY INITIALIZATION AUDIT ================", itemsRes.data);
                 if (itemsRes.data.success) setAvailableItems(itemsRes.data.data || []);
                 setEmployeeRegistry(empRes.data.data || []);
 
                  if (officesRes.data.success) setAvailableOffices(officesRes.data.data || []);
-                
-                // Static template fallback index
-                // setAvailableOffices([
-                //     { OfficeID: 1, OfficeName: "Headquarters (HQ)" },
-                //     { OfficeID: 2, OfficeName: "Okhla Branch Terminal" },
-                //     { OfficeID: 3, OfficeName: "Mohali Tech Hub" },
-                //     { OfficeID: 4, OfficeName: "Delhi Branch Office" }
-                // ]);
+    
              
 
             } catch (err) {
@@ -94,12 +91,19 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
 
             //  console.log("RESOLVED INTEGER FACILITY KEY (activeOfficeTarget):", activeOfficeTarget);
             // console.log("PAGE RENDER CONTEXT:", context);
-            // console.log("================================================================");
+            console.log("================================================================");
             
 
 
             const [transferRes, issueHistoryRes, stockRes] = await Promise.all([
               axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/transfers-log', { withCredentials: true }),
+
+                // axios.get('http://localhost:5001/api/inventry/transfers-log', { withCredentials: true }),
+
+
+
+                //axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/issued-history', { withCredentials: true }).catch(() => ({ data: { data: [] } })),
+
                 axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/issued-history', { withCredentials: true }).catch(() => ({ data: { data: [] } })),
 
 
@@ -116,7 +120,7 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
 
             const rawTransfers = transferRes.data.transfers || transferRes.data.data || [];
 
-
+            
             console.log(`📥 API PAYLOAD DOWNLOADED: Total ${rawTransfers.length} global records fetched.`);
 
             // 🎯 FIXED: Create a stable office target key fallback chain to prevent NaN comparisons
@@ -408,7 +412,7 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
                  <button onClick={() => setActiveSubTab('branchTransfers')} className={`py-2 px-4 border-b-2 font-black transition-all ${activeSubTab === 'branchTransfers' ? 'border-blue-600 text-blue-600 bg-white rounded-t-lg' : 'border-transparent text-gray-400'}`}>
                         {/* {userRole === 'admin' ? 'Inter-Branch Transits Master Log' : 'Incoming Branch Freight Manifests'} ({branchTransfersLog.length}) */}
 
-                         Incoming Branch Freight Manifests ({branchTransfersLog.length})   
+                         Branch transfer History ({branchTransfersLog.length})   
                     </button> 
 
                     {(userRole === 'admin' || userRole === 'branch admin') && (

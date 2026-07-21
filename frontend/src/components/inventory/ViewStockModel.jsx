@@ -164,9 +164,9 @@ const ViewStockModal = ({ isOpen, onClose, itemData, userRole }) => {
                                             <tr key={idx} className="hover:bg-gray-50/50 transition-colors duration-100">
                                                 
                                                 {/* A. Nomenclature */}
-                                                {/* <td className="p-3 px-4 font-bold text-gray-900 uppercase">
+                                                <td className="p-3 px-4 font-bold text-gray-900 uppercase">
                                                     {subItem.itemName || subItem.item || "—"}
-                                                </td> */}
+                                                </td>
 
                                             <td className="p-3 px-4">
                                                 <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded font-semibold text-[10px]">
@@ -176,11 +176,11 @@ const ViewStockModal = ({ isOpen, onClose, itemData, userRole }) => {
                                             </td>
                                                                                             
                                                 {/* B. Category Tag Label */}
-                                                <td className="p-3 px-4">
+                                                {/* <td className="p-3 px-4">
                                                     <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded font-semibold text-[10px]">
                                                         {subItem.category || itemData?.Category || "General"}
                                                     </span>
-                                                </td>
+                                                </td> */}
                                                 
                                                 {/* C. Units Count */}
                                                 <td className="p-3 px-4 text-center font-mono font-extrabold text-blue-600">

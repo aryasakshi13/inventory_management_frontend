@@ -108,18 +108,18 @@ const TransitLogsTable = ({ data, userRole, availableOffices = [], availableItem
                                 {/* {isAdmin && ( */}
 
                                
-                                    <td className="p-4 font-extrabold uppercase text-gray-900 whitespace-nowrap">
+                                    <td className="p-4 font-mono uppercase text-gray-900 whitespace-nowrap">
                                         {resolvedFromBranch}
                                     </td>
                               
 
                                 {/* To Office Name */}
-                                  {!isApprovalView && ( <td className="p-4 font-extrabold uppercase text-gray-900 whitespace-nowrap">
+                                  {!isApprovalView && ( <td className="p-4 font-mono uppercase text-gray-900 whitespace-nowrap">
                                     {resolvedToBranch}
                                 </td>  )}
 
                                 {/* Item Name resolved via master lookup dictionary */}
-                                <td className="p-4 font-black uppercase text-gray-900 tracking-wide whitespace-nowrap">
+                                <td className="p-4 font-black  font-mono uppercase text-gray-900 tracking-wide whitespace-nowrap">
                                     {resolvedItemName}
                                 </td>
 
