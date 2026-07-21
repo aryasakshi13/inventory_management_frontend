@@ -459,7 +459,7 @@ const Dashboard = () => {
                                     onClick={triggerAddModal}
                                     className="bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs px-4 py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-blue-600/10"
                                 >
-                                    <UserPlus size={14} /> Add System Personnel
+                                    <UserPlus size={14} /> Add Employee
                                 </button>
                             </div>
 
@@ -758,7 +758,7 @@ const Dashboard = () => {
 
 
                             <div className="space-y-1.5">
-                                <label className="text-slate-400 font-semibold block ml-0.5">Operational Clearance Level</label>
+                                <label className="text-slate-400 font-semibold block ml-0.5">Select Role</label>
                                 <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full h-10 px-2 bg-[#0B0F19] border border-[#1E2943] text-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
                                     <option value="employee">Employee Terminal (Standard)</option>
                                     <option value="branch admin">Branch Admin Terminal (Medium Privilege)</option>
