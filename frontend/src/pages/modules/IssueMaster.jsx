@@ -104,7 +104,13 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
 
                 //axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/issued-history', { withCredentials: true }).catch(() => ({ data: { data: [] } })),
 
-                axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/issued-history', { withCredentials: true }).catch(() => ({ data: { data: [] } })),
+                axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/issued-history',{ 
+                            headers: {
+                              'Authorization': `Bearer ${localStorage.getItem('authToken')}` // 🌟 Fix: This unblocks the stock layout verification!
+                             },
+                            
+                                withCredentials: true 
+                            } ).catch(() => ({ data: { data: [] } })),
 
 
                 // axios.get(`https://inventory-manage-q4yr.onrender.com/api/inventry/branch-stock/${userRole === 'branch admin' ? userOfficeId : currentSelectedOfficeId}`, { withCredentials: true }).catch(() => ({ data: { data: [] } }))
