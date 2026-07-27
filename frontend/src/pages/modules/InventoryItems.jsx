@@ -224,8 +224,7 @@ const groupInventoryByPO = (rawData) => {
     };
 
     return (
-        // <div className="bg-[#0B0F19] w-full min-h-screen p-6">
-         <div className="bg-gray-50 w-full min-h-screen p-6">
+        <div className="bg-gray-50 w-full h-screen p-6 flex flex-col overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                 <div>
 
@@ -286,9 +285,7 @@ const groupInventoryByPO = (rawData) => {
 
 
             {/* UNIFIED CONTAINER FOR TABLE & PAGINATION FOOTER */}
-            <div className="w-full bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-
-       
+            <div className=" flex-1 min-h-0 w-full bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
 
                <InventoryTable 
                 data={groupedStockList.filter(row => {
@@ -351,18 +348,18 @@ const groupInventoryByPO = (rawData) => {
 
             {/* 2. 📊 ENTERPRISE LIGHT THEME PAGINATION BAR */}
                 {!isLoading && stockList.length > 0 && (
-                    <div className="p-4 border-t border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
+                    <div className=" h-10 shrink-0 p-4 border-t border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
                         <div>
                             Page <span className="text-blue-600 font-bold">{currentPage}</span> of <span className="text-gray-900 font-semibold">{totalPages}</span>
                         </div>
                         
-                        <div className="flex gap-1.5 w-full sm:w-auto justify-end select-none">
+                        <div className="flex gap-1.5 w-full sm:w-auto justify-end select-none  mt-2">
                             {/* FIRST PAGE BUTTON */}
                             <button 
                                 type="button"
                                 disabled={currentPage === 1}
                                 onClick={() => setCurrentPage(1)}
-                                className="px-2.5 py-1.5 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-40 disabled:pointer-events-none transition-all font-semibold shadow-sm"
+                                className=" mt-4 px-2.5 py-1.5 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-40 disabled:pointer-events-none transition-all font-semibold shadow-sm"
                             >
                                 First
                             </button>
@@ -372,7 +369,7 @@ const groupInventoryByPO = (rawData) => {
                                 type="button"
                                 disabled={currentPage === 1}
                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                className="px-3 py-1.5 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-40 disabled:pointer-events-none transition-all font-semibold shadow-sm"
+                                className="mt-4 px-3 py-1.5 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-40 disabled:pointer-events-none transition-all font-semibold shadow-sm"
                             >
                                 Prev
                             </button>
@@ -383,7 +380,7 @@ const groupInventoryByPO = (rawData) => {
                                     key={pageNumber}
                                     type="button"
                                     onClick={() => setCurrentPage(pageNumber)}
-                                    className={`w-8 h-8 rounded-md border text-center transition-all font-bold ${
+                                    className={`w-8 mt-4 h-8 rounded-md border text-center transition-all font-bold ${
                                         currentPage === pageNumber
                                             ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                                             : 'border-gray-300 bg-white hover:bg-gray-50 text-gray-700'
@@ -398,7 +395,7 @@ const groupInventoryByPO = (rawData) => {
                                 type="button"
                                 disabled={currentPage === totalPages || totalPages === 0}
                                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                className="px-3 py-1.5 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-40 disabled:pointer-events-none transition-all font-semibold shadow-sm"
+                                className=" mt-4 px-3 py-1.5 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-40 disabled:pointer-events-none transition-all font-semibold shadow-sm"
                             >
                                 Next
                             </button>
@@ -408,7 +405,7 @@ const groupInventoryByPO = (rawData) => {
                                 type="button"
                                 disabled={currentPage === totalPages || totalPages === 0}
                                 onClick={() => setCurrentPage(totalPages)}
-                                className="px-2.5 py-1.5 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-40 disabled:pointer-events-none transition-all font-semibold shadow-sm"
+                                className=" mt-4 px-2.5 py-1.5 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-gray-700 disabled:opacity-40 disabled:pointer-events-none transition-all font-semibold shadow-sm"
                             >
                                 Last
                             </button>

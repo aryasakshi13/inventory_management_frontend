@@ -13,7 +13,7 @@ const BranchMaster = ({ userRole, fetchDatabaseRegistry }) => {
     const [totalPages, setTotalPages] = useState(1);
     const [totalRows, setTotalRows] = useState(0);
     const [rowsPerPage] = useState(10);
-    const [employees, setEmployees] = useState([]);
+    // const [employees, setEmployees] = useState([]);
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -74,22 +74,22 @@ const BranchMaster = ({ userRole, fetchDatabaseRegistry }) => {
     };
 
 
-    const getAllEmployees = async () => {
-        const result = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/auth/employees`);
-        setEmployees(result.data.data || []);
-    }
+    // const getAllEmployees = async () => {
+    //     const result = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/auth/employees`);
+    //     setEmployees(result.data.data || []);
+    // }
 
-    useEffect(() => {
-        if (userRole === 'admin') {
-            getAllEmployees()
-        }
-    }, [userRole]);
+    // useEffect(() => {
+    //     if (userRole === 'admin') {
+    //         getAllEmployees()
+    //     }
+    // }, [userRole]);
 
 
 
     return (
-        <div className="space-y-4 bg-gray-50 p-2 text-xs text-gray-600 font-semibold text-left w-full">
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden w-full">
+        <div className="flex flex-col flex-1 min-h-0 bg-gray-50 p-2 text-xs text-gray-600 font-semibold text-left w-full">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden w-full flex flex-col flex-1 min-h-0">
 
                 {/* Header */}
                 <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -157,16 +157,16 @@ const BranchMaster = ({ userRole, fetchDatabaseRegistry }) => {
                         No branches registered yet.
                     </div>
                 ) : (
-                    <div className="overflow-x-auto text-xs w-full bg-white">
+                    <div className=" flex-1 min-h-0 overflow-auto text-xs w-full bg-white">
                         <table className="w-full text-left border-collapse table-auto min-w-[900px]">
-                            <thead>
+                            <thead className="sticky top-0 z-20 bg-gray-50">
                                 <tr className="bg-gray-50 text-gray-400 border-b border-gray-200 font-black text-[9px] uppercase tracking-wider">
                                     <th className="p-4 pl-6">Office Code</th>
                                     <th className="p-4">Office Name</th>
                                     <th className="p-4">Address</th>
-                                    <th className="p-4">Admin Name</th>
+                                    {/* <th className="p-4">Admin Name</th>
                                     <th className="p-4">Admin Email</th>
-                                    <th className="p-4 pr-6">Admin Emp ID</th>
+                                    <th className="p-4 pr-6">Admin Emp ID</th> */}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 text-gray-700 font-semibold">
@@ -181,7 +181,7 @@ const BranchMaster = ({ userRole, fetchDatabaseRegistry }) => {
                                         <td className="p-4 text-gray-600 max-w-xs truncate" title={office.OfficeAddress || ''}>
                                             {office.OfficeAddress || <span className="text-gray-400 italic font-normal">N/A</span>}
                                         </td>
-                                        <td className="p-4 text-gray-800 whitespace-nowrap">
+                                        {/* <td className="p-4 text-gray-800 whitespace-nowrap">
                                             {office.AdminName || <span className="text-gray-400 italic font-normal">N/A</span>}
                                         </td>
                                         <td className="p-4 text-gray-600 whitespace-nowrap">
@@ -189,7 +189,7 @@ const BranchMaster = ({ userRole, fetchDatabaseRegistry }) => {
                                         </td>
                                         <td className="p-4 pr-6 font-mono text-gray-600 whitespace-nowrap">
                                             {office.AdminEmpId || <span className="text-gray-400 font-sans italic font-normal">N/A</span>}
-                                        </td>
+                                        </td> */}
                                     </tr>
                                 ))}
                             </tbody>
@@ -262,7 +262,7 @@ const BranchMaster = ({ userRole, fetchDatabaseRegistry }) => {
                 <AddBranchModal
                     isOpen={showAddModal}
                     onClose={() => setShowAddModal(false)}
-                    employees={employees}
+                    // employees={employees}
                     onActionSuccess={fetchOffices}
                     fetchDatabaseRegistry={fetchDatabaseRegistry}
                 />

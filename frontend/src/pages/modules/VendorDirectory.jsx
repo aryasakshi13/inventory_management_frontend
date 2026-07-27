@@ -45,8 +45,8 @@ const VendorsDirectory = ({ userRole }) => {
     };
 
     return (
-        <div className="space-y-4 bg-gray-50 p-2 text-xs text-gray-600 font-semibold text-left w-full">
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden w-full">
+        <div className="flex flex-col flex-1 min-h-0 bg-gray-50 p-2 text-xs text-gray-600 font-semibold text-left w-full">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden w-full flex flex-col flex-1 min-h-0">
                 
                 {/* Header Container */}
                 <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -88,7 +88,7 @@ const VendorsDirectory = ({ userRole }) => {
                 ) : (
                     <div className="overflow-x-auto text-xs w-full bg-white">
                         <table className="w-full text-left border-collapse table-auto min-w-[1000px]">
-                            <thead>
+                            <thead className='sticky top-0 z-20  bg-gray-50'>
                                 <tr className="bg-gray-50 text-gray-400 border-b border-gray-200 font-black text-[9px] uppercase tracking-wider">
                                     <th className="p-4 pl-6">Vendor ID</th>
                                     <th className="p-4">Vendor Name</th>

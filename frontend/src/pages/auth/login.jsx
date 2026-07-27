@@ -121,10 +121,10 @@ async function handleLogout() {
 
 
  return(
-   <div className="flex flex-col justify-center min-h-screen items-center bg-[#0B0F19] px-4 antialiased relative overflow-hidden gap-4">
+   <div className="flex flex-col justify-center min-h-screen items-center bg-white px-4 antialiased relative overflow-hidden gap-4">
 
              {/* Logout button */}
-           <div className="absolute top-4 right-4 z-20">
+           {/* <div className="absolute top-4 right-4 z-20">
                 <Button 
                     onClick={handleLogout}
                     disabled={logoutLoading}
@@ -134,7 +134,7 @@ async function handleLogout() {
                     <LogOut size={13} />
                     {logoutLoading ? 'Clearing...' : 'Sign Out'}
                 </Button>
-            </div> 
+            </div>  */}
 
 
 
@@ -142,21 +142,19 @@ async function handleLogout() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[130px] pointer-events-none" />
                
             {/* Main Admin Card Context Wrapper */}
-            <Card className="w-full max-w-md bg-[#131B2E]/90 border-[#1E2943] text-slate-100 shadow-2xl backdrop-blur-md relative z-10 py-2">
+            <Card className="w-full max-w-md bg-white border-gray-200  shadow-xl rounded 2xl backdrop-blur-md relative z-10 py-2">
                 <CardHeader className="space-y-2 text-center pt-8">
-                    <div className="mx-auto bg-amber-500/10 w-12 h-12 rounded-xl flex items-center justify-center border border-amber-500/20 shadow-inner mb-2">
-                        <ShieldX className="w-6 h-6 text-amber-400" />
+                    <div className="mx-auto bg-bg-blue-100 w-12 h-12 rounded-xl flex items-center justify-center border border-blue-200 shadow-inner mb-2">
+                        <ShieldX className="w-6 h-6 text-blue-600" />
                     </div>
-                    <CardTitle className="text-2xl font-bold tracking-tight bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent">
+                    <CardTitle className="text-2xl font-bold text-gray-900">
                         IMS Admin Gateway
                     </CardTitle>
-                    {/* <CardDescription className="text-slate-400 text-xs max-w-xs mx-auto mb-6 leading-relaxed">
-                        Enter administrative access phrases to decrypt system inventories.
-                    </CardDescription> */}
+                    
                 </CardHeader>
 
                 <CardContent className="px-8 pb-6 space-y-5">
-                    {/* Green Bouncing Success Notification Banner */}
+                    
                     {successMessage && (
                         <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3 rounded-lg mb-5 text-xs font-medium text-center animate-bounce" role="alert">
                             {successMessage}
@@ -172,16 +170,16 @@ async function handleLogout() {
 
                     <form onSubmit={handleLogin} className="space-y-4">
                         <div className="space-y-1.5">
-                            <Label htmlFor="email" className="text-slate-300 text-xs font-semibold tracking-wide block ml-1">Admin Email</Label>
+                            <Label htmlFor="email" className="text-gray-700 text-xs font-semibold tracking-wide block ml-1">Admin Email</Label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <Input 
                                     id="email"
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="admin@company.com"
-                                    className="pl-10 !bg-[#0B0F19] border-[#1E2943] !text-slate-100 placeholder:text-slate-600 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-all h-11"
+                                    className="pl-10 !bg-white border-gray-300 text-gray-900  placeholder:text-gray-400 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-all h-11"
                                     required
                                     autoFocus
                                 />
@@ -190,21 +188,21 @@ async function handleLogout() {
 
                         <div className="space-y-1.5">
                             <div className="flex justify-between items-center">
-                                <Label htmlFor="password" className="text-slate-300 text-xs font-semibold tracking-wide block ml-1">Password</Label>
+                                <Label htmlFor="password" className="text-gray-700 text-xs font-semibold tracking-wide block ml-1">Password</Label>
                                 {/* Phase 3 Token Hook Link */}
                                 {/* <Link to="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
                                     Forgot phrase?
                                 </Link> */}
                             </div>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <Input 
                                     id="password"
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="pl-10 !bg-[#0B0F19] border-[#1E2943] !text-slate-100 placeholder:text-slate-600 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-all h-11"
+                                    className="pl-10 !bg-white  border-gray-300 text-gray-900  placeholder:text-gray-400 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-all h-11"
                                     required
                                 />
                             </div>
@@ -229,23 +227,6 @@ async function handleLogout() {
                 </CardContent>
             </Card>
 
-            {/* 🛠️ TEMPORARY SANDBOX TESTING PANEL: Fire Admin Sign Out Live */}
-            {/* <div className="w-full max-w-md bg-[#131B2E]/40 border border-dashed border-[#1E2943] rounded-xl p-4 flex items-center justify-between shadow-sm relative z-10 backdrop-blur-sm">
-                <div className="flex flex-col">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Session Sandbox</span>
-                    <span className="text-xs text-slate-500">Kill admin token state live</span>
-                </div>
-                <Button 
-                    onClick={handleLogout}
-                    disabled={logoutLoading}
-                    variant="destructive" 
-                    className="flex items-center gap-2 text-xs py-1.5 h-9 bg-rose-950/40 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 transition-all"
-                >
-                    <LogOut size={14} />
-                    {logoutLoading ? 'Clearing...' : 'Force Admin Logout'}
-                </Button>
-            </div> */}
-
         </div>
  )
 
@@ -255,62 +236,3 @@ export default Login;
 
 
 
-// {/* <div className='w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-slate-200/60'>
-        
-//         {/* Header */}
-//           <div className="text-center mb-8">
-//             <h2 className='text-2xl font-bold text-slate-800 tracking-tight'>Portal login </h2>
-//             <p className='text-slate-500 mt-2'>Enter your credentials to access your workspace.</p>
-
-//           </div>
-
-//             {successMessage && (
-//               <div className='text-emerald-800 text-green-600 bg-emerald-50 border border-emerald-200 p-3 rounded-lg mb-6 text-sm font-medium text-center animate-bounce' role="alert">
-//                 {successMessage}
-//               </div>
-//             )}
-
-//           {error && (
-//             <div className='text-red-800 bg-red-50 border border-red-200 p-3 rounded-lg mb-6' role="alert">
-//                 {error}
-//             </div>
-//           )}
-//           <form onSubmit={handleLogin} className='space-y-5'>
-
-//             <div>
-//                 <label className='block font-semibold text-slate-700 mb-2'>
-//                     Email Address
-//                 </label>
-//                 <input
-//                  type="email"
-//                  value={email}
-//                  onChange={(e) =>setEmail(e.target.value)}
-//                  required
-//                  autoFocus
-//                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus: border-blue-500 transition-colors"
-//                  placeholder="admin@company.com"
-//                  />
-//             </div>
-//              <div>
-//                 <label className="block font-semibold text-slate-700 mb-2">
-//                     Password
-//                 </label>
-//                 <input
-//                  type= "password"
-//                  value={password}
-//                  onChange={(e) => setPassword(e.target.value)}
-//                  required
-//                  className='w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors'
-//                  placeholder= "Admin@123"
-//                 />
-//              </div>
-//              <button
-//                  type="submit"
-//                  disabled ={loading}
-//                  className=' w-full bg-blue-600 text-white px-4 rounded-lg font-semibold transition-all '
-//                  >
-//                  {loading? 'Authenticating' : 'SignIn'}
-//              </button>
-//           </form>
-     
-//         </div> */}

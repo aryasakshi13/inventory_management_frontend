@@ -11,9 +11,10 @@ const EmployeeAllocationTable = ({ data }) => {
     }
 
     return (
-        <div className="overflow-x-auto text-xs w-full bg-white animate-in fade-in duration-100">
+        <div className=" flex flex-col flex-1 min-h-0 overflow-auto text-xs w-full bg-white animate-in fade-in duration-100">
+            
             <table className="w-full text-left border-collapse table-auto min-w-[900px]">
-                <thead>
+                <thead className="sticky top-0 z-20 bg-gray-50">
                     <tr className="bg-gray-50 text-gray-400 border-b border-gray-200 font-black text-[9px] uppercase tracking-wider">
                         <th className="p-4 pl-6 flex items-center gap-1"><Hash size={11} /> Allocation ID</th>
                         <th className="p-4">Personnel Profile</th>

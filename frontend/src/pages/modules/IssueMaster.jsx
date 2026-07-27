@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Truck, Users, Database, Plus, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
-
-// 🎯 Component Imports (Matching your verified filenames character-for-character)
 import TransitLogsTable from '../../components/issue/TransitLogstable';
 import EmployeeAllocationTable from '../../components/issue/EmployeeAllocationTable';
-// import BranchAllocationTable from '../../components/issue/BranchAllocationTable';
 import IssueEmployeeModal from '../../components/issue/IssueEmployeeModal';
 import BranchTransferModal from '../../components/issue/BranchTransferModal';
 
@@ -18,22 +15,22 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
     // console.log("1. Received prop 'userOfficeId':", userOfficeId, `(Type: ${typeof userOfficeId})`);
     // console.log("2. Window LocalStorage raw 'user':", window.localStorage.getItem('user'));
     // console.groupEnd();
-
+       
+     const defaultTab = 
+    userRole?.toLowerCase() === 'admin'
+        ? 'branchTransfers'
+        : 'employeeIssues';
 
     // Shared state engines
     const [branchTransfersLog, setBranchTransfersLog] = useState([]);
     const [employeeIssuesLog, setEmployeeIssuesLog] = useState([]);
     const [selectedBranchStock, setSelectedBranchStock] = useState([]);
     
-    // Static system registries (Cached single-fetch)
+    
     const [availableItems, setAvailableItems] = useState([]);
     const [availableOffices, setAvailableOffices] = useState([]);
     const [employeeRegistry, setEmployeeRegistry] = useState([]);
-
-    // UI Panel Control Triggers
-    // const [activeSubTab, setActiveSubTab] = useState('branchTransfers');
-    //  const [activeSubTab, setActiveSubTab] = useState('inStock');
-    const [activeSubTab, setActiveSubTab] = useState(forcedInitialTab || 'branchTransfers');
+    const [activeSubTab, setActiveSubTab] = useState(forcedInitialTab || defaultTab);
     const [currentSelectedOfficeId, setCurrentSelectedOfficeId] = useState(userOfficeId || 0);
     const [showStaffModal, setShowStaffModal] = useState(false);
     const [showBranchModal, setShowBranchModal] = useState(false);
@@ -301,7 +298,7 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
 
 
     return (
-        <div className="space-y-4 bg-gray-50 p-2 text-xs text-gray-600 font-semibold text-left w-full">
+        <div className="flex flex-col flex-1 min-h-0 bg-gray-50 p-2 text-xs text-gray-600 font-semibold text-left w-full">
             {msg.text && (
                 <div className={`p-3 rounded-xl border flex items-center gap-2 shadow-sm ${msg.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-600'}`}>
                     {msg.type === 'success' ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
@@ -310,7 +307,7 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
             )}
 
             {/* FULL WIDTH LEDGER FRAME */}
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden w-full">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden w-full flex flex-col flex-1 min-h-0">
                 
                 {/* SYSTEM LEVEL ACTIONS HEADER CONTAINER STRIP */}
                 <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -415,11 +412,13 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
           </>
          ) :(
             <>
+                {userRole?.toLowerCase() === 'admin' && (
                  <button onClick={() => setActiveSubTab('branchTransfers')} className={`py-2 px-4 border-b-2 font-black transition-all ${activeSubTab === 'branchTransfers' ? 'border-blue-600 text-blue-600 bg-white rounded-t-lg' : 'border-transparent text-gray-400'}`}>
                         {/* {userRole === 'admin' ? 'Inter-Branch Transits Master Log' : 'Incoming Branch Freight Manifests'} ({branchTransfersLog.length}) */}
 
                          Branch transfer History ({branchTransfersLog.length})   
                     </button> 
+                  )}
 
                     {(userRole === 'admin' || userRole === 'branch admin') && (
                         <button onClick={() => setActiveSubTab('employeeIssues')} className={`py-2 px-4 border-b-2 font-black transition-all ${activeSubTab === 'employeeIssues' ? 'border-blue-600 text-blue-600 bg-white rounded-t-lg' : 'border-transparent text-gray-400'}`}>
@@ -520,8 +519,8 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
     activeSubTab === 'branchTransfers' ? (
         /* 🚛 TAB 1: INTER-BRANCH TRANSITS MASTER LOG */
         <TransitLogsTable 
-            // data={branchTransfersLog} 
-             data={stockOutTransfers}
+            data={branchTransfersLog} 
+            //  data={stockOutTransfers}
             userRole={userRole} 
             availableOffices={availableOffices} 
             availableItems={availableItems} 

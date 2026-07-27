@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import axios from 'axios';
-import { Layers, Plus, AlertCircle } from 'lucide-react';
+import {  X,Layers, Plus, AlertCircle } from 'lucide-react';
 import ItemsTable from '../../components/items/ItemsTable';
 import AddItemClassModal from '../../components/items/AddItemsModel';
 
-const ItemsDirectory = ({ userRole }) => {
+const ItemsDirectory = ({ user, userRole }) => {
+
+      const userOfficeId = user?.officeId || user?.OfficeID;
+
     const [itemsList, setItemsList] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -12,7 +15,10 @@ const ItemsDirectory = ({ userRole }) => {
 
 
     // 🟢 NEW FILTER STATES
-    const [selectedOffice, setSelectedOffice] = useState('all');
+  const [selectedOffice, setSelectedOffice] = useState(userOfficeId);
+  const [selectedOfficeName, setSelectedOfficeName] = useState(
+    user?.officeName || user?.OfficeName || ""
+    );
     const [selectedItem, setSelectedItem] = useState('all');
 
 
@@ -28,8 +34,22 @@ const ItemsDirectory = ({ userRole }) => {
     const [itemSearchQuery, setItemSearchQuery] = useState('');
     const [isItemDropdownVisible, setIsItemDropdownVisible] = useState(false);
 
+       const initialized = useRef(false);
 
+        useEffect(() => {
+            if (!officesDropdown.length || initialized.current) return;
 
+            initialized.current = true;
+
+            const currentOffice = officesDropdown.find(
+                office => String(office.ID) === String(userOfficeId)
+            );
+
+            if (currentOffice) {
+                setSelectedOffice(currentOffice.ID);
+                setSelectedOfficeName(currentOffice.OfficeName);
+            }
+        }, [officesDropdown, userOfficeId]);
 
     const fetchItemsCatalog = async () => {
         try {
@@ -104,9 +124,19 @@ const ItemsDirectory = ({ userRole }) => {
         loadFilterOptions();
     }, []);
 
-    const filteredOffices = officesDropdown.filter(off => 
-        String(off.OfficeName || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
+   const filteredOffices = officesDropdown.filter(off => {
+        if (userRole === 'branch admin') {
+            return String(off.ID) === String(userOfficeId);
+        }
+
+        // return String(off.OfficeName || '')
+        //     .toLowerCase()
+        //     .includes(searchQuery.toLowerCase());
+
+        return String(off.OfficeName || '')
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase());
+    });
 
     // 🟢 ADD THIS HIGHLIGHTED BLOCK: Filters items dynamically as the user types
     const filteredItemsOptions = uniqueProductsDropdown.filter(item => 
@@ -116,7 +146,8 @@ const ItemsDirectory = ({ userRole }) => {
    const isSuperAdmin = userRole === 'admin';
 
     return (
-        <div className="space-y-6 bg-gray-50 p-1">
+        <div className="flex flex-col flex-1 min-h-0 bg-gray-50 p-1">
+
             {/* LIGHT ACTION ROW BAR */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 border border-gray-200 rounded-xl shadow-sm">
                 <div>
@@ -135,40 +166,14 @@ const ItemsDirectory = ({ userRole }) => {
                     {/* Office Filter Dropdown */}
                     <div className="flex flex-col gap-1 relative">
                         <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">Office Hub</label>
-                        {/* <select 
-                            value={selectedOffice} 
-                            onChange={(e) => setSelectedOffice(e.target.value)}
-                            className="h-9 px-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 font-bold outline-none cursor-pointer min-w-[140px]"
-                        >
-                            <option value="all">ALL OFFICES</option>
-                            {officesDropdown.map(off => (
-                                <option key={off.ID} value={off.ID}>
-                                    {String(off.OfficeName).toUpperCase()}
-                                </option>
-                            ))}
-                        </select> */}
+                       <div className="relative">
                         {/* Search Input Field */}
                         <input
                             type="text"
                             placeholder="🔍 Search Office Hub..."
-                            // value={
-                            //     selectedOffice === 'all' 
-                            //         ? '🌐 ALL OFFICES' 
-                            //         : (officesDropdown.find(o => String(o.ID || o.id) === String(selectedOffice))?.OfficeName || '')
-                            // }
                              
-                            value={searchQuery}
-
-                            // onClick={(e) => {
-                            //     // Clears text on click so user can type to search cleanly
-                            //     if (selectedOffice === 'all') e.target.value = '';
-                            // }}
-                            // onChange={(e) => {
-                            //     const val = e.target.value.toLowerCase();
-                            //     // Temporary storage to filter options inline
-                            //     e.target.setAttribute('data-search', val);
-                            //     setSelectedOffice(''); // Reset selection while typing
-                            // }}
+                            // value={searchQuery}
+                            value={isDropdownVisible ? searchQuery : selectedOfficeName}
 
                              onChange={(e) => {
                                 setSearchQuery(e.target.value);
@@ -178,73 +183,94 @@ const ItemsDirectory = ({ userRole }) => {
                             // onBlur={() => setTimeout(() => document.getElementById('office-dropdown-panel').classList.add('hidden'), 200)}
 
                              onFocus={() => {
+                                // setIsDropdownVisible(true);
+                                // if (selectedOffice === 'all') setSearchQuery('');
+                                
                                 setIsDropdownVisible(true);
-                                // If "ALL OFFICES" was selected, clear input text so user can search fresh cleanly
-                                if (selectedOffice === 'all') setSearchQuery('');
+                                setSearchQuery("");
+
                             }}
                             onBlur={() => {
                                 // Timeout allows clicking the panel item options before it hides
                                 setTimeout(() => {
                                     setIsDropdownVisible(false);
-                                    // If no office is chosen, restore current office name text safely
+                                    // // If no office is chosen, restore current office name text safely
                                     const current = officesDropdown.find(o => String(o.ID) === String(selectedOffice));
-                                    setSearchQuery(current ? current.OfficeName : '🌐 ALL OFFICES');
+                                    setSelectedOfficeName(
+                                            current ? current.OfficeName : ""
+                                        );
+                                    // setSearchQuery(current ? current.OfficeName : '🌐 ALL OFFICES');
                                 }, 250);
                             }}
                             className="h-9 px-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 font-bold outline-none cursor-pointer min-w-[180px] text-xs placeholder-gray-400 focus:bg-white focus:border-blue-500"
                         />
+                         
+                         {/* REMOVE ICON */}
+        {selectedOffice !== 'all' && selectedOfficeName && (
+            <button
+                type="button"
+                onMouseDown={(e) => {
+                    e.preventDefault();
 
-                        {/* Floating Options Panel Overlay */}
-                        {/* <div 
-                            id="office-dropdown-panel" 
-                            className="hidden absolute top-14 left-0 w-full min-w-[220px] bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto z-50 divide-y divide-gray-50 text-xs"
-                        >
-                            <div 
-                                onClick={() => { setSelectedOffice('all'); }}
-                                className="p-2.5 hover:bg-blue-50 cursor-pointer font-bold text-blue-600 uppercase"
-                            >
-                                🌐 ALL OFFICES
-                            </div>
-                            
-                            {officesDropdown.map(off => {
-                                const officeNameStr = String(off.OfficeName || off.name || '');
-                                return (
-                                    <div 
-                                        key={off.ID || off.id}
-                                        onClick={() => { setSelectedOffice(off.ID || off.id); }}
-                                        className="p-2.5 hover:bg-gray-100 cursor-pointer font-semibold uppercase text-gray-700 transition-colors"
-                                    >
-                                        {officeNameStr}
-                                    </div>
-                                );
-                            })}
-                        </div>
+                    // restore default admin office
+                    const defaultOffice = officesDropdown.find(
+                        o => String(o.ID) === String(userOfficeId)
+                    );
 
-                        
+                    if(defaultOffice){
+                        setSelectedOffice(defaultOffice.ID);
+                        setSelectedOfficeName(defaultOffice.OfficeName);
+                    }
 
- */}
+                    setSearchQuery("");
+                    setIsDropdownVisible(false);
+                }}
+
+                className="
+                absolute right-2 top-1/2 -translate-y-1/2
+                text-gray-400 hover:text-red-500
+                transition
+                "
+            >
+                <X size={14}/>
+            </button>
+         )}
+         </div>
+
 
 
                       {/* Floating Options Panel Overlay */}
                         {isDropdownVisible && (
                             <div className="absolute top-14 left-0 w-full min-w-[240px] bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto z-50 divide-y divide-gray-50 text-xs">
+                                
+                            {userRole === 'admin' && (
                                 <div 
                                     onMouseDown={() => { 
                                         setSelectedOffice('all'); 
-                                        setSearchQuery('🌐 ALL OFFICES');
+                                        // setSearchQuery('🌐 ALL OFFICES');
+                                        //   setSearchQuery(off.OfficeName);
+                                        setSelectedOfficeName("🌐 ALL OFFICES");
+                                          setSearchQuery("");
+                                          setIsDropdownVisible(false);
                                     }}
                                     className="p-2.5 hover:bg-blue-50 cursor-pointer font-bold text-blue-600 uppercase"
                                 >
                                     🌐 ALL OFFICES
                                </div>
+                            )}
                                 
                                 {filteredOffices.length > 0 ? (
                                     filteredOffices.map(off => (
                                         <div 
                                             key={off.ID}
                                             onMouseDown={() => { 
-                                                setSelectedOffice(off.ID); 
-                                                setSearchQuery(off.OfficeName);
+                                                // setSelectedOffice(off.ID); 
+                                                // setSearchQuery(off.OfficeName);
+
+                                                setSelectedOffice(off.ID);
+                                                setSelectedOfficeName(off.OfficeName);
+                                                setSearchQuery("");
+                                                setIsDropdownVisible(false);
                                             }}
                                             className="p-2.5 hover:bg-gray-100 cursor-pointer font-semibold uppercase text-gray-700 transition-colors"
                                         >
@@ -260,23 +286,6 @@ const ItemsDirectory = ({ userRole }) => {
                         )}
 
                     </div>
-
-                    {/* Item Filter Dropdown */}
-                    {/* <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wider">Product Nomenclature</label>
-                        <select 
-                            value={selectedItem} 
-                            onChange={(e) => setSelectedItem(e.target.value)}
-                            className="h-9 px-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 font-bold outline-none cursor-pointer min-w-[160px]"
-                        >
-                            <option value="all"> ALL ITEM MODELS</option>
-                            {uniqueProductsDropdown.map(item => (
-                                <option key={item.ItemId} value={item.ItemId}>
-                                    {item.ItemName.toUpperCase()}
-                                </option>
-                            ))}
-                        </select>
-                    </div> */}
 
                       {/* 🟢 REPLACE OLD ITEM FILTER DROPDOWN SCOPE WITH THIS EXACT BLOCK */}
                     <div className="flex flex-col gap-1 relative">
@@ -348,9 +357,9 @@ const ItemsDirectory = ({ userRole }) => {
                     <button
                         type="button"
                         onClick={() => setIsModalOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg flex items-center gap-2 transition-all shadow-sm focus:outline-none uppercase tracking-wider"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all shadow-sm focus:outline-none uppercase tracking-wider"
                     >
-                        <Plus size={14} strokeWidth={2.5} /> Add Item
+                         Add Item
                     </button>
                     </div>
                 )}
@@ -365,7 +374,7 @@ const ItemsDirectory = ({ userRole }) => {
             )}
 
             {/* LIGHT DATA GRID BOX */}
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex flex-col flex-1 min-h-0">
                 <ItemsTable data={itemsList} loading={isLoading} />
             </div>
 

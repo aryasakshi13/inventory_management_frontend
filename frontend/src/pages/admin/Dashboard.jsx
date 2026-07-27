@@ -24,7 +24,7 @@ import {
     Truck,
     Edit3,
     Menu
-    
+
 } from "lucide-react";
 
 const Dashboard = () => {
@@ -56,11 +56,15 @@ const Dashboard = () => {
         // { name: 'System Settings', icon: Settings, allowedRoles: ['admin']  },
     ];
 
-    const initialDefaultTab = menuItems.find(item =>
+    const initialDefaultTab = menuItems.some(item => item.name === 'Items' && item.allowedRoles.includes(userRole))
+    ? 'Items'
+    : menuItems.find(item =>
         item.allowedRoles.includes(userRole)
-    )?.name || 'Overview';
+      )?.name || 'Overview';
 
-    const [activeTab, setActiveTab] = useState(initialDefaultTab);
+    const [activeTab, setActiveTab] = useState(
+        localStorage.getItem("activeTab") || initialDefaultTab
+    );
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('add'); // 'add' or 'assign'
 
@@ -82,48 +86,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(false);
 
     const [employees, setEmployees] = useState([]);
-    //  const [fetchLoading, setFetchLoading] = useState(true);
-
-    // Initial table representation rows matching your phpMyAdmin structure
-    // const [employees, setEmployees] = useState([
-    //     { EmpId: "EMP001", Name: "Kamal Singh", Mail: "kamal@gmail.com", role: "admin" },
-    //     { EmpId: "EMP002", Name: "Rahul Sharma", Mail: "rahul@gmail.com", role: "employee" },
-    //     { EmpId: "EMP003", Name: "Priya Patel", Mail: "priya@gmail.com", role: "branch admin" }
-    // ]);
-
-    //      React.useEffect(() => {
-    //     const fetchDatabaseRegistry = async () => {
-    //         try {
-    //             const response = await fetch('https://inventory-manage-q4yr.onrender.com/api/auth/employees', {
-    //                 method: 'GET',
-    //                 headers: {
-    //                     'Content-Type': 'application/json'
-    //                 },
-    //                 credentials: 'include' // Attaches session cookies if enforced by backend guards
-    //             });
-
-    //             const result = await response.json();
-
-    //             if (result.success) {
-    //                 // Map database array results directly into the React display engine
-    //                 setEmployees(result.data || []);
-    //             } else {
-    //                 console.error("Server rejected registry read payload:", result.message);
-    //             }
-    //         } catch (err) {
-    //             console.error("Failed to connect to port 5001 database subsystem:", err);
-    //         } finally {
-    //             setFetchLoading(false);
-    //         }
-    //     };
-
-    //     // Fire data synchronization sequence if user role is permitted
-    //     if (userRole === 'admin') {
-    //         fetchDatabaseRegistry();
-    //     } else {
-    //         setFetchLoading(false);
-    //     }
-    // }, [userRole]);
+   
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -270,15 +233,6 @@ const Dashboard = () => {
         }
     };
 
-    // const triggerAddModal = () => {
-    //     setModalMode('add');
-    //     setEmpId('');
-    //     setName('');
-    //     setEmail('');
-    //     setPassword('');
-    //     setSelectedRole('employee');
-    //     setIsModalOpen(true);
-    // };
 
     const triggerAddModal = () => {
         setModalMode('add');
@@ -291,15 +245,7 @@ const Dashboard = () => {
         setIsModalOpen(true);
     };
 
-    // const triggerAssignModal = (employee) => {
-    //     setModalMode('assign');
-    //     setEmpId(employee.EmpId);
-    //     setName(employee.Name);
-    //     setEmail(employee.Mail);
-    //     setPassword('');
-    //     setSelectedRole(employee.role);
-    //     setIsModalOpen(true);
-    // };
+   
 
 
     const triggerAssignModal = (employee) => {
@@ -324,21 +270,22 @@ const Dashboard = () => {
 
     const handleLogout = () => {
         localStorage.removeItem('user');
+        localStorage.removeItem("authToken");
         window.location.href = '/login';
     };
 
     return (
-        <div className="min-h-screen bg-white text-black-100 flex antialiased relative overflow-hidden">
+        <div className="h-screen bg-white text-black-100 flex antialiased relative overflow-hidden">
             <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
-           
-                {!sidebarOpen && (
-                    <button
-                        onClick={() => setSidebarOpen(true)}
-                        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md border border-gray-200"
-                    >
-                        <Menu size={24} color="black" />
-                    </button>
-                )}
+
+            {!sidebarOpen && (
+                <button
+                    onClick={() => setSidebarOpen(true)}
+                    className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md border border-gray-200"
+                >
+                    <Menu size={24} color="black" />
+                </button>
+            )}
 
             {sidebarOpen && (
                 <div
@@ -351,16 +298,13 @@ const Dashboard = () => {
             {/* <aside className="w-64 flex-shrink-0 bg-white border-r border-gray-200 backdrop-blur-md hidden md:flex flex-col sticky top-0 h-screen overflow-y-auto"> */}
             <aside
                 className={`
-                    fixed md:sticky top-0 left-0 z-40
-                    w-64 flex-shrink-0
-                    bg-white border-r border-gray-200
-                    h-screen overflow-y-auto
-                    flex flex-col
-
-                    transform transition-transform duration-300 ease-in-out
-
-                    ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-                    md:translate-x-0
+                   fixed top-0 left-0 z-40
+                w-64 h-screen
+                bg-white border-r border-gray-200
+                overflow-y-auto flex flex-col
+                transform transition-transform duration-300 ease-in-out
+                ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+                md:translate-x-0
                     `}
             >
                 <div className="h-16 flex items-center px-6 border-b border-gray-200 gap-3">
@@ -383,12 +327,12 @@ const Dashboard = () => {
                         Accuprobe
                     </span>
 
-                      {/* Mobile Close Button */}
+                    {/* Mobile Close Button */}
                     <button
                         onClick={() => setSidebarOpen(false)}
                         className="ml-auto md:hidden"
                     >
-                        <X size={22}/>
+                        <X size={22} />
                     </button>
 
                 </div>
@@ -413,8 +357,8 @@ const Dashboard = () => {
                                     onClick={() => {
                                         setActiveTab(item.name)
                                         setSidebarOpen(false);
-                                        }}
-                                    
+                                    }}
+
                                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${isActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10' : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
                                         }`}
                                 >
@@ -433,8 +377,8 @@ const Dashboard = () => {
             </aside>
 
             {/* CONTENT AREA */}
-            <div className="flex-1 flex flex-col min-w-0">
-                <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6 backdrop-blur-sm">
+            <div className="flex-1 flex flex-col min-w-0  min-h-0 md:ml-64  overflow-hidden">
+                <header className="sticky top-0 z-20 h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6  pl-16 md:pl-6">
                     <h1 className="text-lg font-bold text-gray-900">{activeTab}</h1>
 
                     <div className="flex items-center gap-4">
@@ -448,7 +392,7 @@ const Dashboard = () => {
                     </div>
                 </header>
 
-                <main className="p-6 md:p-8 flex-1 overflow-y-auto">
+                <main className="p-6 md:p-8 flex-1 min-h-0 overflow-hidden flex flex-col">
 
                     {activeTab === 'Stocks In' && (
                         <InventoryItems
@@ -469,7 +413,10 @@ const Dashboard = () => {
 
 
                     {activeTab === 'Items' && (
-                        <ItemsDirectory userRole={userRole} />
+                        <ItemsDirectory 
+                        user={user}
+                        userRole={userRole} 
+                        />
                     )}
 
                     {activeTab === 'Item Issue' && (
@@ -493,8 +440,8 @@ const Dashboard = () => {
 
 
                     {activeTab === 'Employee Master' && userRole === 'admin' && (
-                        <div className="space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
+                        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                            <div className=" mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
                                 <div>
                                     <h2 className="text-md font-bold text-gray-900">Personnel Directory Registry</h2>
                                     <p className="text-xs text-gray-600  mt-0.5">Activate credential keys or log clean operational profiles directly into the database.</p>
@@ -509,114 +456,132 @@ const Dashboard = () => {
 
 
 
-                            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                                <div className="p-4 border-b border-gray-200 bg-gray-50  text-gray-700 font-bold text-[11px] tracking-wider grid grid-cols-12 hidden md:grid">
+                            <div className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden">
+                                {/* <div className=" sticky top-0 z-20 p-4 border-b border-gray-200 bg-gray-50  text-gray-700 font-bold text-[11px] tracking-wider grid grid-cols-12 hidden md:grid"> */}
+                                <div className="flex-1 min-h-0 overflow-auto">
+                                    <table className="min-w-[1100px] w-full border-collapse">
+                                        <thead className="sticky top-0 z-20 bg-gray-50 border-b border-gray-200">
+                                            <tr className="text-[11px] font-bold text-gray-700">
+                                                <th className="px-4 py-3 text-left">Employee ID</th>
+                                                <th className="px-4 py-3 text-left">Full Name</th>
+                                                <th className="px-4 py-3 text-left">Email ID</th>
+                                                <th className="px-4 py-3 text-left">Branch</th>
+                                                <th className="px-4 py-3 text-center">Role</th>
+                                                <th className="px-4 py-3 text-center">Status</th>
+                                                <th className="px-4 py-3 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
 
-                                    <div className="col-span-2">Employee ID</div>
-                                    <div className="col-span-2">Full Name</div>
-                                    <div className="col-span-3">Email Id</div>
-                                    <div className="col-span-2">Branch</div>
-                                    <div className="col-span-1">Role</div>
-                                    <div className="col-span-1">Status</div>
-                                    <div className="col-span-1 text-right">Actions</div>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {employees.map((emp) => {
+
+                                                const empRole = (emp.role || emp.Role || "employee").toLowerCase();
+
+                                                const rawStatus = emp.status !== undefined ? emp.status : emp.Status;
+
+                                                const empStatus =
+                                                    rawStatus == 1 ||
+                                                        String(rawStatus).toLowerCase().trim() === "active"
+                                                        ? "active"
+                                                        : "inactive";
+
+                                                return (
+                                                    <tr key={emp.EmpId} className="hover:bg-gray-50 text-xs">
+
+                                                        <td className="px-4 py-3 font-mono font-bold text-blue-600 whitespace-nowrap">
+                                                            {emp.EmpId}
+                                                        </td>
+
+                                                        <td className="px-4 py-3 whitespace-nowrap text-gray-900">
+                                                            {emp.Name}
+                                                        </td>
+
+                                                        <td className="px-4 py-3 text-gray-900">
+                                                            <div className="max-w-[260px] truncate">
+                                                                {emp.Mail}
+                                                            </div>
+                                                        </td>
+
+                                                        <td className="px-4 py-3 whitespace-nowrap text-gray-900">
+                                                            {emp.OfficeName || <span className="italic">Unassigned</span>}
+                                                        </td>
+
+                                                        <td className="px-4 py-3 text-center">
+                                                            <span className={`inline-block whitespace-nowrap px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${empRole === "admin"
+                                                                ? "bg-rose-500/10 border border-rose-500/20 text-rose-400"
+                                                                : empRole === "branch admin"
+                                                                    ? "bg-amber-500/10 border border-amber-500/20 text-amber-400"
+                                                                    : "bg-gray-100 border border-gray-300 text-gray-700"
+                                                                }`}>
+                                                                {empRole}
+                                                            </span>
+                                                        </td>
+
+                                                        <td className="px-4 py-3 text-center">
+                                                            {/* Your existing status toggle button */}
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const nextDbStatus = empStatus === "active" ? 0 : 1;
+
+                                                                    setEmployees(
+                                                                        employees.map((e) =>
+                                                                            e.EmpId === emp.EmpId
+                                                                                ? { ...e, status: nextDbStatus }
+                                                                                : e
+                                                                        )
+                                                                    );
+                                                                }}
+                                                                className={`mx-auto w-10 h-5 flex items-center rounded-full p-0.5 transition-all duration-300 outline-none ${empStatus === "active"
+                                                                    ? "bg-emerald-500/20 border border-emerald-500/40"
+                                                                    : "bg-rose-500/10 border border-rose-500/30"
+                                                                    }`}
+                                                                title={`Click to toggle status to ${empStatus === "active" ? "Inactive" : "Active"
+                                                                    }`}
+                                                            >
+                                                                <div
+                                                                    className={`w-3.5 h-3.5 rounded-full shadow-md transform transition-all duration-300 pointer-events-none ${empStatus === "active"
+                                                                        ? "translate-x-5 bg-emerald-400"
+                                                                        : "translate-x-0 bg-rose-400"
+                                                                        }`}
+                                                                />
+                                                            </button>
+                                                        </td>
+
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex justify-end gap-2">
+                                                                {/* View Button */}
+                                                                {/* Edit Button */}
+
+                                                                <div className="flex items-center justify-end gap-2">
+                                                                    <button
+                                                                        onClick={() => triggerViewModal(emp)}
+                                                                        className="px-1.5 py-1 border border-gray-300 hover:border-emerald-500 bg-white hover:bg-emerald-50 text-gray-700 hover:text-emerald-600 rounded-md transition-all flex items-center gap-1"
+                                                                    >
+                                                                        <Eye size={12} />
+                                                                    </button>
+
+                                                                    <button
+                                                                        onClick={() => triggerAssignModal(emp)}
+                                                                        className="px-1.5 py-1 border border-gray-300 hover:border-blue-500 bg-white hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-md transition-all flex items-center gap-1"
+                                                                    >
+                                                                        <Edit3 size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
                                 </div>
 
-                                <div className="divide-y divide-gray-200">
-                                    {employees.map((emp) => {
-
-                                        const empRole = (emp.role || emp.Role || 'employee').toLowerCase();
-
-                                        const rawStatus = emp.status !== undefined ? emp.status : emp.Status;
-                                        const empStatus = (rawStatus == 1 || String(rawStatus).toLowerCase().trim() === 'active') ? 'active' : 'inactive';
-
-                                        return (
-                                            <div key={emp.EmpId} className="p-4 grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-0 items-center text-xs hover:bg-gray-50 transition-colors">
-                                                <div className="col-span-2 font-mono text-blue-600 font-bold">{emp.EmpId}</div>
-                                                <div className="col-span-2 font-semibold text-gray-900 break-words">{emp.Name}</div>
-                                                <div className="col-span-3 text-gray-900 break-all">{emp.Mail}</div>
-
-                                                <div className="col-span-2 text-gray-900 truncate">{emp.OfficeName || <span className="italic">Unassigned</span>}</div>
 
 
-                                                <div className="col-span-1">
-                                                    <span className={` inline-block whitespace-nowrap px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${empRole === 'admin' ? 'bg-rose-500/10 border border-rose-500/20 text-rose-400' :
-                                                        empRole === 'branch admin' ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' :
-                                                            'bg-gray-100 border border-gray-300 text-gray-700'
-                                                        }`}>
-                                                        {empRole}
-                                                    </span>
-                                                </div>
-                                                <div className="col-span-1 flex items-center justify-center gap-2">
-                                                    {/* <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                                     emp.status === 'active' || emp.status === undefined
-                                                      ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' 
-                                                      : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
-                                                      }`}>
-                                                       {emp.status || 'active'}
-                                                </span> */}
-
-                                                    {/* <span className={`w-12 text-[10px] font-bold uppercase tracking-wider text-right transition-colors duration-200 ${
-                                                    (empStatus === 'active' || empStatus === undefined) ? 'text-emerald-400' : 'text-rose-400'
-                                                }`}>
-                                                    {(empStatus === 'active' || empStatus === undefined) ? 'Active' : 'Inactive'}
-                                                </span> */}
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            // Determine what the flipped target status value should be
-                                                            // const currentStatus = emp.status || 'active';
-                                                            // const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
-                                                            const nextDbStatus = empStatus === 'active' ? 0 : 1;
-                                                            // Instantly sync the mutation into your React state array memory
-                                                            setEmployees(employees.map(e => e.EmpId === emp.EmpId ? { ...e, status: nextDbStatus } : e));
-
-                                                            // console.log(`Live status mutation fired for ID: ${emp.EmpId}. Updated state to: ${nextDbStatus.toUpperCase()}`);
-                                                        }}
-                                                        className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-all duration-300 outline-none ${(empStatus === 'active' || empStatus === undefined)
-                                                            ? 'bg-emerald-500/20 border border-emerald-500/40'
-                                                            : 'bg-rose-500/10 border border-rose-500/30'
-                                                            }`}
-                                                        title={`Click to toggle status to ${empStatus === 'active' ? 'Inactive' : 'Active'}`}
-                                                    >
-                                                        {/* Sliding hardware style rounded thumb indicator knob knob */}
-                                                        <div
-                                                            className={`w-3.5 h-3.5 rounded-full shadow-md transform transition-all duration-300 pointer-events-none ${(empStatus === 'active' || empStatus === undefined)
-                                                                ? 'translate-x-5 bg-emerald-400'
-                                                                : 'translate-x-0 bg-rose-400'
-                                                                }`}
-                                                        />
-                                                    </button>
-
-                                                </div>
-
-                                                <div className="col-span-1.5 flex items-center justify-end gap-2 ml-auto text-right">
-
-                                                    {/* 👁️ VIEW BUTTON */}
-                                                    <button
-                                                        onClick={() => triggerViewModal(emp)}
-                                                        className="px-1.5 py-1 border border-gray-300 hover:border-emerald-500 bg-white hover:bg-emerald-50 text-gray-700 hover:text-emerald-600 rounded-md transition-all flex items-center gap-1 font-medium"
-                                                    >
-                                                        <Eye size={12} />
-                                                    </button>
-
-                                                    {/* ✏️ EDIT BUTTON (Triggers your existing credential modal) */}
-                                                    <button
-                                                        onClick={() => triggerAssignModal(emp)}
-                                                        className="px-1.5 py-1 border border- hover:border-blue-500 bg-white hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-md transition-all flex items-center gap-1 font-medium"
-                                                    >
-                                                        <Edit3 size={12} />
-                                                    </button>
-
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
-
-
-                                <div className="p-4 border-t border-gray-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-700">
+                                <div className="p-4 flex-shrink-0 border-t border-gray-200 bg-white flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 text-xs text-gray-700">
                                     <div>
                                         Page <span className="text-blue-400 font-bold">{currentPage}</span> of <span className="text-gray-900 font-semibold">{totalPages}</span>
                                     </div>
@@ -778,13 +743,7 @@ const Dashboard = () => {
 
                             <div className="space-y-1.5">
                                 <label className="text-slate-400 font-semibold block ml-0.5">Assigned Facility Branch</label>
-                                {/* <select value={branch} onChange={(e) => setBranch(e.target.value)} className="w-full h-10 px-2 bg-[#0B0F19] border border-[#1E2943] text-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
-                                    <option value="Main Head Office">Main Head Office (HQ)</option>
-                                    <option value="North Warehousing Hub">North Warehousing Hub</option>
-                                    <option value="South Logistics Center">South Logistics Center</option>
-                                    <option value="Eastern Distribution Point">Eastern Distribution Point</option>
-                                </select> */}
-
+                               
                                 <select value={selectedOfficeId} onChange={(e) => setSelectedOfficeId(e.target.value)} className="w-full h-10 px-2 bg-[#0B0F19] border border-[#1E2943] text-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
                                     <option value="">-- Select Branch --</option>
                                     {offices.map(office => (

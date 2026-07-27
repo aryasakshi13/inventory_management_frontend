@@ -34,10 +34,10 @@ const InventoryTable = ({ data, loading, userRole,onViewClick, inventoryTab, onE
      let extraItemsCount = 0;
 
     return (
-        <div className="w-full bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse whitespace-nowrap">
-                    <thead>
+        <div className="w-full bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col flex-2  min-h-0 overflow-hidden">
+            <div className=" flex-1 min-h-0 overflow-auto">
+                <table className=" min-w-[1200px] w-full text-left border-collapse whitespace-nowrap">
+                    <thead className="sticky top-0 z-20 bg-gray-50">
                         <tr className="border-b border-gray-200 bg-gray-50/70 text-gray-500 text-xs font-bold uppercase tracking-wider">
                             <th className="py-4 px-4 select-none">ID</th>
                             <th className="py-4 px-4 select-none">Category</th>
@@ -80,13 +80,13 @@ const InventoryTable = ({ data, loading, userRole,onViewClick, inventoryTab, onE
                             <tr key={row.id} className="hover:bg-gray-50/40 transition-colors duration-150">
                                 
                                
-                                <td className="py-4 px-4 text-black font-mono ">
+                                <td className="py-1 px-3 text-black font-mono ">
                                     #STK-{String(row.id).padStart(4, '0')}
                                 </td>
                                 
 
                             
-                                <td className="py-4 px-4 text-gray-700">
+                                <td className="py-1 px-3 text-gray-700">
                                     {row.Category ? (
                                         <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200 font-medium">
                                             {row.Category}
@@ -97,7 +97,7 @@ const InventoryTable = ({ data, loading, userRole,onViewClick, inventoryTab, onE
                                 </td>
 
                              
-                                    <td className="py-4 px-5">
+                                    <td className="py-1 px-3">
                                         <div className="flex flex-col gap-0.5">
                                             <span className=" text-gray-900 uppercase">
                                                 {row.item || 'N/A'}
@@ -115,21 +115,21 @@ const InventoryTable = ({ data, loading, userRole,onViewClick, inventoryTab, onE
                                     </td>
 
                                     {!isTransitView && (
-                                    <td className="py-4 px-4 font-mono text-gray-800 tracking-tight uppercase">
+                                    <td className="py-1 px-3 font-mono text-gray-800 tracking-tight uppercase">
                                         {row.purchase_no || <span className="text-gray-300">—</span>}
                                     </td>
                                 )}
 
 
                                 {normalRole === 'admin' && (
-                                    <td className="py-4 px-4 font-mono font-medium text-gray-800 uppercase">
+                                    <td className="py-1 px-3 font-mono font-medium text-gray-800 uppercase">
                                         {row.OfficeName || row.officeName || `Branch ${row.officeId}`}
                                     </td>
                                 )}
 
                                  {console.log("row", row)}
                                
-                                <td className="py-4 px-4">
+                                <td className="py-1 px-3">
                                  
                                         <span className="text-gray-900 uppercase text-[11px] tracking-wide">
                                             {row.creatorName || "Central Corporate"}
@@ -137,7 +137,7 @@ const InventoryTable = ({ data, loading, userRole,onViewClick, inventoryTab, onE
                                   
                                 </td>
                           
-                                <td className="py-4 px-4 text-center">
+                                <td className="py-1 px-3 text-center">
                                     <span className={`inline-block font-mono font-bold px-2.5 py-1 rounded-md text-xs border ${
                                         parseInt(row.Quantity) > 10 
                                             ? 'text-emerald-700 bg-emerald-50 border-emerald-200/60' 
@@ -148,7 +148,7 @@ const InventoryTable = ({ data, loading, userRole,onViewClick, inventoryTab, onE
                                 </td>
                
                                  {!isTransitView && (
-                                 <td className="py-4 px-6 text-right whitespace-nowrap">
+                                 <td className="py-1 px-3 text-right whitespace-nowrap">
                                     <div className="inline-flex items-center gap-1.5">
                                 
                                         <button
@@ -182,3 +182,5 @@ const InventoryTable = ({ data, loading, userRole,onViewClick, inventoryTab, onE
 
 
 export default InventoryTable;
+
+

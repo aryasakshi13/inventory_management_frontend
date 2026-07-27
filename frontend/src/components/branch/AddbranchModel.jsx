@@ -4,14 +4,15 @@ import { X } from 'lucide-react';
 
 
 
-const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) => {
+// const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) => {
+const AddBranchModal = ({ isOpen, onClose, onActionSuccess }) => {
     const [formData, setFormData] = useState({
         OfficeCode: '',
         OfficeName: '',
         OfficeAddress: '',
-        AdminEmpId: '',
-        AdminName: '',
-        AdminMail: ''
+        // AdminEmpId: '',
+        // AdminName: '',
+        // AdminMail: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -24,28 +25,28 @@ const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) =>
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-      const handleAdminSelectionChange = (e) => {
-    const targetedEmpId = e.target.value;
+//     const handleAdminSelectionChange = (e) => {
+//     const targetedEmpId = e.target.value;
 
-    if (!targetedEmpId) {
-        setFormData({
-            ...formData,
-            AdminEmpId: '',
-            AdminName: '',
-            AdminMail: ''
-        });
-        return;
-    }
+//     if (!targetedEmpId) {
+//         setFormData({
+//             ...formData,
+//             AdminEmpId: '',
+//             AdminName: '',
+//             AdminMail: ''
+//         });
+//         return;
+//     }
 
-     const matchedProfile = employees.find(emp => String(emp.EmpId) === String(targetedEmpId));
+//      const matchedProfile = employees.find(emp => String(emp.EmpId) === String(targetedEmpId));
 
-     setFormData({
-        ...formData,
-        AdminEmpId: targetedEmpId,
-        AdminName: matchedProfile ? (matchedProfile.Name || '') : '',
-        AdminMail: matchedProfile ? (matchedProfile.Mail || '') : ''
-    });
-};
+//      setFormData({
+//         ...formData,
+//         AdminEmpId: targetedEmpId,
+//         AdminName: matchedProfile ? (matchedProfile.Name || '') : '',
+//         AdminMail: matchedProfile ? (matchedProfile.Mail || '') : ''
+//     });
+// };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -147,18 +148,10 @@ const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) =>
                          
                          
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block font-bold uppercase text-gray-500 text-[10px] mb-1">Admin Emp ID</label>
-                            {/* <input
-                                type="text"
-                                name="AdminEmpId"
-                                value={formData.AdminEmpId}
-                                onChange={handleChange}
-                                placeholder="Optional"
-                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            /> */}
-
+                           
                                 <select
                                     name="AdminEmpId"
                                     value={formData.AdminEmpId}
@@ -203,9 +196,9 @@ const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) =>
 
 
                         </div>
-                    </div>
+                    </div> */}
 
-                    <div>
+                    {/* <div>
                         <label className="block font-bold uppercase text-gray-500 text-[10px] mb-1">Admin Email</label>
                         <input
                             type="email"
@@ -216,7 +209,7 @@ const AddBranchModal = ({ isOpen, onClose, employees = [], onActionSuccess }) =>
                             placeholder="Auto-Populated"
                             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                    </div>
+                    </div> */}
 
                     {/* Footer */}
                     <div className="flex justify-end gap-2 pt-2">
