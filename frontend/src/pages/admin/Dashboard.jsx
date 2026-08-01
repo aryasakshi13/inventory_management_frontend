@@ -43,17 +43,15 @@ const Dashboard = () => {
 
     const userRole = (user?.role || user?.Role || 'employee').toLowerCase();
     const menuItems = [
-        // { name: 'Overview', icon: LayoutDashboard, allowedRoles: ['admin', 'branch admin', 'employee']},
-        { name: 'Stocks In', icon: Boxes, allowedRoles: ['admin', 'branch admin', 'employee'] },
-        //   { name: 'Stock In', icon: Boxes, allowedRoles: ['admin', 'branch admin', 'employee'] },
+   
+        { name: 'Stocks In', icon: Boxes, allowedRoles: ['admin', 'branch admin', 'employee'] }, 
         { name: 'Item Issue', icon: Users, allowedRoles: ['admin', 'branch admin'] },
         { name: 'Stock Transfers', icon: GitFork, allowedRoles: ['admin', 'branch admin'] },
         { name: 'Branch Master', icon: FolderKanban, allowedRoles: ['admin'] },
         { name: 'Employee Master', icon: Users, allowedRoles: ['admin'] },
         { name: 'Items', icon: Layers, allowedRoles: ['admin', 'branch admin'] },
         { name: 'Vendors Control', icon: Truck, allowedRoles: ['admin'] },
-        // { name: 'Analytics Control', icon: TrendingUp, allowedRoles: ['admin']  },
-        // { name: 'System Settings', icon: Settings, allowedRoles: ['admin']  },
+       
     ];
 
     const initialDefaultTab = menuItems.some(item => item.name === 'Items' && item.allowedRoles.includes(userRole))

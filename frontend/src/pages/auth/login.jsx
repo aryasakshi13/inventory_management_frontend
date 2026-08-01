@@ -75,11 +75,24 @@ const navigate = useNavigate()
             setSuccessMessage('LoggedIn Successfully..');
             setLoading(false);
             
-            const targetRoute = data.redirecteTo || '/employee/dashboard';
+            // const targetRoute = data.redirecteTo || '/employee/dashboard';
+
+            // setTimeout(() => {
+            //     navigate('/admin/dashboard');
+            //     }, 1500);
+
+            const role = data.user?.role?.toLowerCase();
+
+            let targetRoute = "/admin/dashboard";
+
+            if (role === "sales" || role === "store manager") {
+                targetRoute = "/pages/mainModule";
+            }
 
             setTimeout(() => {
-                navigate('/admin/dashboard');
-                }, 1500);
+                navigate(targetRoute, { replace: true });
+            }, 1500);
+                
         }else{
             setError(data.message);
         }
