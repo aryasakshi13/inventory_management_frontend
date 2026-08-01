@@ -35,10 +35,11 @@ const fetchClients = async () => {
   
   const filteredClients = useMemo(() => {
     return clients.filter((client) => {
+      console.log("client data is here ",clients);
       const matchesSearch =
-        client.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        client.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        client.gstIn.toLowerCase().includes(searchQuery.toLowerCase());
+        client.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        client.contactPerson?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        client.gstIn?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesStatus = statusFilter ? client.status === statusFilter : true;
 
@@ -74,21 +75,7 @@ const fetchClients = async () => {
     setEditingClient(null);
   };
 
-  // const handleSaveClient = (formData) => {
-  //   if (editingClient) {
-  //     setClients((prev) =>
-  //       prev.map((item) => (item.id === editingClient.id ? { ...item, ...formData } : item))
-  //     );
-  //   } else {
-  //     const newClient = {
-  //       ...formData,
-  //       id: `CL-${Date.now().toString().slice(-3)}`,
-  //       createdAt: new Date().toISOString().split('T')[0],
-  //     };
-  //     setClients((prev) => [newClient, ...prev]);
-  //   }
-  //   handleCloseModal();
-  // };
+
   
    const handleSaveClient = async (formData) => {
 
