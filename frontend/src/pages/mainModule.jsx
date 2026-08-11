@@ -88,10 +88,11 @@ import { ClientDetailPage } from "../feature/client/pages/clientDetailsPage";
 import { SalesOrderPage } from "../feature/sales/pages/salesOrderPage";
 
 import { PurchaseListPage } from "../feature/purchase/pages/PurchaseListPage";
-import { PurchaseEntryPage } from "../feature/purchase/pages/PurchaseEntryPage";
+// import { PurchaseEntryPage } from "../feature/purchase/pages/PurchaseEntryPage";
 import { StorePage } from "../feature/storeItems/pages/storePage";
 import { DeliveryList } from "../feature/delivery/pages/DeliveryList";
 import { CreateDeliveryPage } from "../feature/delivery/pages/CreateDeliveryPage";
+import { PurchaseEntryPage } from "@/feature/purchase/pages/purchaseEntryPage";
 
 const MainModule = () => {
   const navigate = useNavigate();
