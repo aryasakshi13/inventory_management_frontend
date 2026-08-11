@@ -141,11 +141,11 @@ const groupInventoryByPO = (rawData) => {
             }
             
             // Fires GET request using role-based query headers matching your backend guards
-            // const response = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/inventry?page=1&limit=50`, {
+            // const response = await axios.get(`https://www.namami-infotech.com/inventory/api/inventry?page=1&limit=50`, {
 
                 const baseUrl = window.location.hostname === 'localhost' 
                 ? 'http://localhost:5001' 
-                : 'https://inventory-manage-q4yr.onrender.com';
+                : 'https://www.namami-infotech.com/inventory';
 
             //  const response = await axios.get(`http://localhost:5001/api/inventry?page=1&limit=50`, {
                  const response = await axios.get(`${baseUrl}/api/inventry?page=1&limit=50`, {

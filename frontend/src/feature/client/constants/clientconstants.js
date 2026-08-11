@@ -11,6 +11,7 @@ export const EMPTY_CLIENT_FORM = {
   emailId: '',
   Phone: '',
   status: 'active',
+  role: 'client',
   Address: "",
 };
 

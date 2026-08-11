@@ -3,7 +3,7 @@
 import React from 'react';
 import { CLIENT_STATUSES } from '../constants/clientconstants';
 
-export const ClientTable = ({ clients, onRowClick, onEditClick }) => {
+export const ClientTable = ({ clients, onRowClick, onEditClick, children }) => {
   const getStatusBadge = (statusValue) => {
     const config = CLIENT_STATUSES.find((s) => s.value === statusValue);
     return (
@@ -22,10 +22,12 @@ export const ClientTable = ({ clients, onRowClick, onEditClick }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-xs overflow-hidden">
-      <div className="overflow-x-auto">
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+
+      <div className="h-[55vh] overflow-auto">
+
         <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <thead className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider sticky top-0 z-10 bg-white">
             <tr>
               <th className="p-4">Client / Company</th>
               <th className="p-4">Contact Person</th>
@@ -62,6 +64,9 @@ export const ClientTable = ({ clients, onRowClick, onEditClick }) => {
           </tbody>
         </table>
       </div>
+
+      {/* Footer area (e.g., pagination) rendered inside same card */}
+      {children && <div className="shrink-0 border-t border-gray-200 bg-white p-3">{children}</div>}
     </div>
   );
 };

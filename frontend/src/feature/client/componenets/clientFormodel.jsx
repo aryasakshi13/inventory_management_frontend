@@ -4,14 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { EMPTY_CLIENT_FORM } from '../constants/clientconstants';
 
 export const ClientFormModal = ({ isOpen, onClose, onSubmit, initialData }) => {
-  const [formData, setFormData] = useState(EMPTY_CLIENT_FORM);
+  const [formData, setFormData] = useState({ ...EMPTY_CLIENT_FORM, role: EMPTY_CLIENT_FORM.role ?? 'client' });
 
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      setFormData({ ...initialData, role: initialData.role ?? 'client' });
     } else {
-      setFormData(EMPTY_CLIENT_FORM);
+      setFormData({ ...EMPTY_CLIENT_FORM, role: EMPTY_CLIENT_FORM.role ?? 'client' });
     }
   }, [initialData, isOpen]);
 
@@ -49,6 +49,18 @@ export const ClientFormModal = ({ isOpen, onClose, onSubmit, initialData }) => {
           <div>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Company & Tax Info</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Role *</label>
+                <select
+                  required
+                  value={formData.role}
+                  onChange={(e) => handleChange('role', e.target.value)}
+                  className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none text-black"
+                >
+                  <option value="client">Client</option>
+                  <option value="vendor">Vendor</option>
+                </select>
+              </div>
               <div className="md:col-span-1">
                 <label className="block text-xs font-medium text-gray-700 mb-1">Company Name *</label>
                 <input
@@ -69,6 +81,7 @@ export const ClientFormModal = ({ isOpen, onClose, onSubmit, initialData }) => {
                   className="w-full border rounded-lg p-2 text-sm uppercase font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none text-black"
                 />
               </div>
+             
             </div>
           </div>
 

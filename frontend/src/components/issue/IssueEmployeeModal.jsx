@@ -57,7 +57,7 @@ const IssueEmployeeModal = ({
         try {
             const response = await axios.get(
                 // "http://localhost:5001/api/items",
-                 "https://inventory-manage-q4yr.onrender.com/api/items",
+                 "https://www.namami-infotech.com/inventory/api/items",
                 {
                     params: {
                         officeId: user?.officeId
@@ -87,7 +87,7 @@ const IssueEmployeeModal = ({
                 try {
                     setIsLoadingStock(true);
                     // 📡 Hits your new backend router path parameter to pull real rows
-                    const res = await axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/branch-stock/1', { withCredentials: true });
+                    const res = await axios.get('https://www.namami-infotech.com/inventory/api/inventry/branch-stock/1', { withCredentials: true });
                     if (res.data.success) {
                         setLocalBranchStock(res.data.data || []);
                     }
@@ -179,11 +179,11 @@ const IssueEmployeeModal = ({
 
 
                 // 📡 Hits your newly registered safe search backend endpoint layout
-                // const res = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/auth/search?query=${value}`, { withCredentials: true });
+                // const res = await axios.get(`https://www.namami-infotech.com/inventory/api/auth/search?query=${value}`, { withCredentials: true });
 
                  const token = localStorage.getItem('authToken');  
                 // const res = await axios.get(`http://localhost:5001/api/auth/search?query=${value}`, {
-                const res = await axios.get(`https://inventory-manage-q4yr.onrender.com/api/auth/search?query=${value}`, {
+                const res = await axios.get(`https://www.namami-infotech.com/inventory/api/auth/search?query=${value}`, {
                     
                      headers: {
                         Authorization: `Bearer ${token}`,
@@ -318,7 +318,7 @@ const IssueEmployeeModal = ({
             const token = localStorage.getItem('authToken');
             const baseUrl = window.location.hostname === 'localhost'
                 ? 'http://localhost:5001'
-                : 'https://inventory-manage-q4yr.onrender.com';
+                : 'https://www.namami-infotech.com/inventory';
 
 
             const res = await axios.post(`${baseUrl}/api/inventry/issue`, payload, {

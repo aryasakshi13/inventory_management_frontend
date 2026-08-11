@@ -9,7 +9,7 @@ import { ClientFormModal } from '../componenets/clientFormodel';
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import {useState, useEffect } from "react";
-import { Pagination } from '@/components/common/pagination';
+import { Pagination } from '../../../components/common/pagination';
 
 export const ClientListPage = () => {
 
@@ -99,16 +99,14 @@ const handleNavigateToDetail = (clientId) => {
       />
 
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-xs">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm h-[650px] flex flex-col overflow-hidden">
       {/* Main Table */}
+      <div className="flex-1 min-h-0 ">
       <ClientTable
-        // clients={clients}
         clients={paginatedClients}
         onRowClick={handleOpenDrawer}
         onEditClick={handleOpenEditModal}
-      />
-
-      {/* Pagination Bar at Table Footer */}
+      >
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -116,6 +114,8 @@ const handleNavigateToDetail = (clientId) => {
           itemsPerPage={itemsPerPage}
           onPageChange={(newPage) => setCurrentPage(newPage)}
         />
+      </ClientTable>
+      </div>
 
       </div>
 

@@ -62,7 +62,7 @@ const AddBranchModal = ({ isOpen, onClose, onActionSuccess }) => {
 
              const baseUrl = window.location.hostname === 'localhost'
                   ? 'http://localhost:5001'                     // 💻 Local testing ke liye (Aapka backend port)
-                   : 'https://inventory-manage-q4yr.onrender.com';
+                   : 'https://www.namami-infotech.com/inventory';
 
 
             const res = await axios.post(

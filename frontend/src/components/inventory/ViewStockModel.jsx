@@ -32,7 +32,7 @@ const ViewStockModal = ({ isOpen, onClose, itemData, userRole }) => {
         if (!filePath) return;
         const targetUrl = filePath.startsWith('http') 
             ? filePath 
-            : `https://inventory-manage-q4yr.onrender.com/${filePath}`;
+            : `https://www.namami-infotech.com/inventory/${filePath}`;
         window.open(targetUrl, '_blank', 'noopener,noreferrer');
     };
 

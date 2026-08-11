@@ -29,9 +29,11 @@ const navigate = useNavigate()
 
         const baseUrl = window.location.hostname === 'localhost'
             ? 'http://localhost:5001'
-            : 'https://inventory-manage-q4yr.onrender.com';
+            : 'https://www.namami-infotech.com/inventory';
+            
 
-        // const response = await fetch('https://inventory-manage-q4yr.onrender.com/api/auth/login',{
+
+        // const response = await fetch('https://www.namami-infotech.com/inventory/api/auth/login',{
          const response = await fetch(`${baseUrl}/api/auth/login`,{
             method: 'POST',
             headers:{
@@ -110,7 +112,7 @@ async function handleLogout() {
         setLogoutLoading(true);
 
         try {
-            const response = await fetch('https://inventory-manage-q4yr.onrender.com/api/auth/logout', {
+            const response = await fetch('https://www.namami-infotech.com/inventory/api/auth/logout', {
                 method: 'POST',
                 credentials: 'include' // Sends the secure cookie to the server to be explicitly destroyed
             });

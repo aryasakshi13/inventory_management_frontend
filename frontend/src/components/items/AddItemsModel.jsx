@@ -56,7 +56,7 @@ const AddItemClassModal = ({ isOpen, onClose, userRole, onSuccess }) => {
 
             const baseUrl = window.location.hostname === 'localhost' 
                 ? 'http://localhost:5001' 
-                : 'https://inventory-manage-q4yr.onrender.com';
+                : 'https://www.namami-infotech.com/inventory';
 
             const response = await axios.post(`${baseUrl}/api/items/add`, {
                 itemName: itemName.trim(),

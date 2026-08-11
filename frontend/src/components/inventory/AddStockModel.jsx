@@ -38,21 +38,21 @@ const AddStockModel = ({ isOpen, onClose, userRole, currentOfficeId, onSuccess }
         try {
             // 1. Fetch available item blueprints from itemmaster
  
-            // const itemsRes = await axios.get('https://inventory-manage-q4yr.onrender.com/api/items');
+            // const itemsRes = await axios.get('https://www.namami-infotech.com/inventory/api/items');
             // if (itemsRes.data.success) {
             //     setAvailableItems(itemsRes.data.data || []);
             // }
 
             // // 2. Fetch registered office names (Make sure you have this route open on backend)
-            // const officesRes = await axios.get('https://inventory-manage-q4yr.onrender.com/api/branch');
+            // const officesRes = await axios.get('https://www.namami-infotech.com/inventory/api/branch');
             // if (officesRes.data.success) {
             //     setAvailableOffices(officesRes.data.data || []); // Expecting array of { OfficeName }
             // }
 
               const [itemsRes, officesRes, vendorsRes] = await Promise.all([
-                axios.get('https://inventory-manage-q4yr.onrender.com/api/items'),
-                axios.get('https://inventory-manage-q4yr.onrender.com/api/branch?limit=1000'),
-                axios.get('https://inventory-manage-q4yr.onrender.com/api/vendor?limit=1000')
+                axios.get('https://www.namami-infotech.com/inventory/api/items'),
+                axios.get('https://www.namami-infotech.com/inventory/api/branch?limit=1000'),
+                axios.get('https://www.namami-infotech.com/inventory/api/vendor?limit=1000')
 
 
             ]);
@@ -220,7 +220,7 @@ const AddStockModel = ({ isOpen, onClose, userRole, currentOfficeId, onSuccess }
 
                const baseUrl = window.location.hostname === 'localhost' 
                 ? 'http://localhost:5001' 
-                : 'https://inventory-manage-q4yr.onrender.com';
+                : 'https://www.namami-infotech.com/inventory';
 
                 const token = localStorage.getItem('authToken');
 

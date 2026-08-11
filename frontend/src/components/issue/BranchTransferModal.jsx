@@ -82,7 +82,7 @@ const BranchTransferModal = ({ isOpen, onClose, availableItems, availableOffices
               const token = localStorage.getItem('authToken');
               const baseUrl = window.location.hostname === 'localhost' 
                 ? 'http://localhost:5001' 
-                : 'https://inventory-manage-q4yr.onrender.com';
+                : 'https://www.namami-infotech.com/inventory';
 
 
             const res = await axios.post(`${baseUrl}/api/inventry/issue`, payload, {

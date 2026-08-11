@@ -1,7 +1,7 @@
 // src/features/clients/hooks/useClients.js
 
 import { useState, useMemo, useEffect } from 'react';
-import { getClients, createClient,updateClient } from "../services/clientService";
+import { getClients, createClient,updateClient, getClientById } from "../services/clientService";
 
 export function useClients() {
   const [clients, setClients] = useState([]);
@@ -81,15 +81,16 @@ const fetchClients = async () => {
 
     try {
 
-        const payload = {
+          const payload = {
             companyName: formData.companyName,
             contactPerson: formData.contactPerson,
             Phone: formData.Phone,
             emailId: formData.emailId,
             gstIn: formData.gstIn,
             Address: formData.Address,
-            status: formData.status
-        };
+            status: formData.status,
+            role: formData.role || 'client'
+          };
 
         if (editingClient) {
 

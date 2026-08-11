@@ -52,10 +52,10 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
                
 
                 const [itemsRes, empRes, officesRes] = await Promise.all([
-                  //  axios.get('https://inventory-manage-q4yr.onrender.com/api/items', { withCredentials: true }),
-                    axios.get('https://inventory-manage-q4yr.onrender.com/api/items', { withCredentials: true }),
-                    axios.get('https://inventory-manage-q4yr.onrender.com/api/auth/employees?limit=500', { withCredentials: true }),
-                    axios.get('https://inventory-manage-q4yr.onrender.com/api/branch?limit=1000', { withCredentials: true })
+                  //  axios.get('https://www.namami-infotech.com/inventory/api/items', { withCredentials: true }),
+                    axios.get('https://www.namami-infotech.com/inventory/api/items', { withCredentials: true }),
+                    axios.get('https://www.namami-infotech.com/inventory/api/auth/employees?limit=500', { withCredentials: true }),
+                    axios.get('https://www.namami-infotech.com/inventory/api/branch?limit=1000', { withCredentials: true })
                 ]);
 
 
@@ -93,15 +93,15 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
 
 
             const [transferRes, issueHistoryRes, stockRes] = await Promise.all([
-              axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/transfers-log', { withCredentials: true }),
+              axios.get('https://www.namami-infotech.com/inventory/api/inventry/transfers-log', { withCredentials: true }),
 
                 // axios.get('http://localhost:5001/api/inventry/transfers-log', { withCredentials: true }),
 
 
 
-                //axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/issued-history', { withCredentials: true }).catch(() => ({ data: { data: [] } })),
+                //axios.get('https://www.namami-infotech.com/inventory/api/inventry/issued-history', { withCredentials: true }).catch(() => ({ data: { data: [] } })),
 
-                axios.get('https://inventory-manage-q4yr.onrender.com/api/inventry/issued-history',{ 
+                axios.get('https://www.namami-infotech.com/inventory/api/inventry/issued-history',{ 
                             headers: {
                               'Authorization': `Bearer ${localStorage.getItem('authToken')}` // 🌟 Fix: This unblocks the stock layout verification!
                              },
@@ -110,9 +110,9 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
                             } ).catch(() => ({ data: { data: [] } })),
 
 
-                // axios.get(`https://inventory-manage-q4yr.onrender.com/api/inventry/branch-stock/${userRole === 'branch admin' ? userOfficeId : currentSelectedOfficeId}`, { withCredentials: true }).catch(() => ({ data: { data: [] } }))
+                // axios.get(`https://www.namami-infotech.com/inventory/api/inventry/branch-stock/${userRole === 'branch admin' ? userOfficeId : currentSelectedOfficeId}`, { withCredentials: true }).catch(() => ({ data: { data: [] } }))
 
-             axios.get(`https://inventory-manage-q4yr.onrender.com/api/inventry/branch-stock/${userRole === 'branch admin' ? userOfficeId : 878}`, { 
+             axios.get(`https://www.namami-infotech.com/inventory/api/inventry/branch-stock/${userRole === 'branch admin' ? userOfficeId : 878}`, { 
                             headers: {
                               'Authorization': `Bearer ${localStorage.getItem('authToken')}` // 🌟 Fix: This unblocks the stock layout verification!
                              },
@@ -241,7 +241,7 @@ const IssueMaster = ({ userRole, userOfficeId, forcedInitialTab, context }) => {
             const token = localStorage.getItem('authToken');
             const baseUrl = window.location.hostname === 'localhost' 
                 ? 'http://localhost:5001' 
-                : 'https://inventory-manage-q4yr.onrender.com';
+                : 'https://www.namami-infotech.com/inventory';
 
             const res = await axios.post(`${baseUrl}/api/inventry/${endpoint}`, { batchId }, {
                 
