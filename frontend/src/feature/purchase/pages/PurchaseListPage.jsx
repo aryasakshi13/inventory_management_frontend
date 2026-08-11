@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Eye, Edit, Trash2 } from 'lucide-react';
 import { getPurchaseOrders } from '../services/purchaseService';
-import { ViewPurchaseModal } from '../component/ViewPurchaseModal';
+import { ViewPurchaseModal } from '../component/viewPurchaseModal';
 
 export const PurchaseListPage = ({ onOpenCreate }) => {
 
