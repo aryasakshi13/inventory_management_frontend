@@ -3,8 +3,8 @@ import axios from 'axios';
 // const BASE_URL = 'http://localhost:5001/api/store-items';
 
 const BASE_URL = window.location.hostname === 'localhost'
-            ? 'http://localhost:5001/api/store-items'
-            : 'https://www.namami-infotech.com/inventory/api/store-items';
+  ? 'http://localhost:5001/api/store-items'
+  : 'https://www.namami-infotech.com/inventory/api/store-items';
 
 
 // Add new store item

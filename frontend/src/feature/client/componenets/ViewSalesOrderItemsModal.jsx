@@ -55,12 +55,19 @@ export const ViewSalesOrderItemsModal = ({
                 <div className="p-6 overflow-y-auto max-h-[75vh]">
 
                     {/* Order Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
 
                         <div>
                             <p className="text-sm text-gray-500">Order ID</p>
                             <p className="font-semibold text-gray-900">
                                 SO-{order.Id}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="text-sm text-gray-500">Project Incharge</p>
+                            <p className="font-semibold text-blue-700">
+                                {order.projectIncharge || 'N/A'}
                             </p>
                         </div>
 
@@ -74,7 +81,7 @@ export const ViewSalesOrderItemsModal = ({
                         <div>
                             <p className="text-sm text-gray-500">PO Date</p>
                             <p className="font-semibold text-gray-900">
-                                {new Date(order.poDate).toLocaleDateString("en-IN")}
+                                {order.poDate ? new Date(order.poDate).toLocaleDateString("en-IN") : 'N/A'}
                             </p>
                         </div>
 
@@ -145,20 +152,28 @@ export const ViewSalesOrderItemsModal = ({
                                 <tr>
 
                                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                                        Item Name
+                                        Product Name
+                                    </th>
+
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                                        Brand Name
+                                    </th>
+
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                                        Capacity
                                     </th>
 
                                     <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
                                         Qty
                                     </th>
 
-                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
+                                    {/* <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
                                         Price
-                                    </th>
+                                    </th> */}
 
-                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
+                                    {/* <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
                                         Total
-                                    </th>
+                                    </th> */}
 
                                 </tr>
 
@@ -173,21 +188,29 @@ export const ViewSalesOrderItemsModal = ({
                                         className="border-t hover:bg-gray-50"
                                     >
 
-                                        <td className="px-4 py-3 text-gray-900">
-                                            {item.itemName}
+                                        <td className="px-4 py-3 text-gray-900 font-medium">
+                                            {item.productName || item.itemName}
                                         </td>
 
-                                        <td className="px-4 py-3 text-center text-gray-900">
+                                        <td className="px-4 py-3 text-gray-800">
+                                            {item.brandName || '—'}
+                                        </td>
+
+                                        <td className="px-4 py-3 text-gray-800">
+                                            {item.capacity || '—'}
+                                        </td>
+
+                                        <td className="px-4 py-3 text-center text-gray-900 font-semibold">
                                             {item.qty}
                                         </td>
 
-                                        <td className="px-4 py-3 text-right text-gray-900">
-                                            ₹{Number(item.price ?? item.price).toLocaleString()}
-                                        </td>
+                                        {/* <td className="px-4 py-3 text-right text-gray-900">
+                                            ₹{Number(item.price ?? 0).toLocaleString()}
+                                        </td> */}
 
-                                        <td className="px-4 py-3 text-right font-medium text-gray-900">
-                                            ₹{Number(item.total ?? item.total).toLocaleString()}
-                                        </td>
+                                        {/* <td className="px-4 py-3 text-right font-medium text-gray-900">
+                                            ₹{Number(item.total ?? 0).toLocaleString()}
+                                        </td> */}
 
                                     </tr>
 
@@ -199,8 +222,8 @@ export const ViewSalesOrderItemsModal = ({
 
                     </div>
 
-                    {/* Grand Total */}
-                    <div className="flex justify-end mt-6">
+                    {/* Grand Total (Commented out for now) */}
+                    {/* <div className="flex justify-end mt-6">
 
                         <div className="bg-blue-50 px-5 py-3 rounded-lg">
 
@@ -209,12 +232,12 @@ export const ViewSalesOrderItemsModal = ({
                             </p>
 
                             <p className="text-xl font-bold text-blue-700">
-                                ₹{Number(order.totalAmount).toLocaleString()}
+                                ₹{Number(order.totalAmount || 0).toLocaleString()}
                             </p>
 
                         </div>
 
-                    </div>
+                    </div> */}
 
                 </div>
 

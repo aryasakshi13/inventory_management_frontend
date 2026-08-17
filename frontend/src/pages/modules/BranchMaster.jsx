@@ -20,13 +20,13 @@ const BranchMaster = ({ userRole, fetchDatabaseRegistry }) => {
     // console.log(search);
 
     useEffect(() => {
-    const timer = setTimeout(() => {
-        setDebouncedSearch(search);
-        setCurrentPage(1); // Optional: reset to first page on new search
-    }, 500); // 500ms delay
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+            setCurrentPage(1); // Optional: reset to first page on new search
+        }, 500); // 500ms delay
 
-    return () => clearTimeout(timer);
-}, [search]);
+        return () => clearTimeout(timer);
+    }, [search]);
 
     const fetchOffices = useCallback(async () => {
         try {
@@ -43,7 +43,7 @@ const BranchMaster = ({ userRole, fetchDatabaseRegistry }) => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, rowsPerPage,debouncedSearch]);
+    }, [currentPage, rowsPerPage, debouncedSearch]);
 
     useEffect(() => {
         fetchOffices();
@@ -105,33 +105,33 @@ const BranchMaster = ({ userRole, fetchDatabaseRegistry }) => {
 
                     <div className="flex items-center gap-2 self-end sm:self-auto">
 
-                         {/* Search Bar */}
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="Search office..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            fetchOffices();
-                                        }
-                                    }}
-                                    className="h-9 w-48 px-3 pr-8 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
+                        {/* Search Bar */}
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Search office..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        fetchOffices();
+                                    }
+                                }}
+                                className="h-9 w-48 px-3 pr-8 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
 
-                                {search && (
-                                    <button
-                                        onClick={() => {
-                                            setSearch("");
-                                            fetchOffices();
-                                        }}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                    >
-                                        ×
-                                    </button>
-                                )}
-                            </div> 
+                            {search && (
+                                <button
+                                    onClick={() => {
+                                        setSearch("");
+                                        fetchOffices();
+                                    }}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    ×
+                                </button>
+                            )}
+                        </div>
                         <button onClick={fetchOffices} className="p-2 border border-gray-200 hover:bg-gray-50 rounded-lg text-gray-500 transition-colors">
                             <RefreshCw size={12} />
                         </button>
@@ -226,8 +226,8 @@ const BranchMaster = ({ userRole, fetchDatabaseRegistry }) => {
                                         type="button"
                                         onClick={() => setCurrentPage(pageNumber)}
                                         className={`w-7 h-7 rounded-md border text-center transition-all font-bold text-[10px] ${currentPage === pageNumber
-                                                ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                                                : 'border-gray-200 bg-white hover:bg-gray-100 text-gray-600'
+                                            ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                                            : 'border-gray-200 bg-white hover:bg-gray-100 text-gray-600'
                                             }`}
                                     >
                                         {pageNumber}

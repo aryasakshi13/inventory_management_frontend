@@ -1,11 +1,11 @@
-                          
+
 import axios from "axios";
 
 // const BASE_URL = "http://localhost:5001/api/client";
 
 const BASE_URL = window.location.hostname === 'localhost'
-            ? 'http://localhost:5001/api/client'
-            : 'https://www.namami-infotech.com/inventory/api/client';
+    ? 'http://localhost:5001/api/client'
+    : 'https://www.namami-infotech.com/inventory/api/client';
 
 
 
@@ -20,19 +20,19 @@ export const getClients = async (params = {}) => {
 };
 
 export const createClient = async (clientData) => {
-  const response = await axios.post(
-    `${BASE_URL}/add`,
-    clientData,
-    {
-      withCredentials: true,
-    }
-  );
+    const response = await axios.post(
+        `${BASE_URL}/add`,
+        clientData,
+        {
+            withCredentials: true,
+        }
+    );
 
-  return response.data;
+    return response.data;
 };
 
 export const updateClient = async (id, clientData) => {
-        console.log("Updating client:", id);
+    console.log("Updating client:", id);
     const response = await axios.put(`${BASE_URL}/update/${id}`, clientData, {
         withCredentials: true,
     });
@@ -54,13 +54,13 @@ export const getClientById = async (id) => {
 };
 
 
-export const getSalesOrdersByClientId = async(id)=>{
-         console.log("Updating client neww:", id);
+export const getSalesOrdersByClientId = async (id) => {
+    console.log("Updating client neww:", id);
     const response = await axios.get(
         `${BASE_URL}/sales/${id}`
         ,
         {
-            withCredentials:true,
+            withCredentials: true,
         }
     );
 
@@ -83,4 +83,3 @@ export const getSalesOrdersByClientId = async(id)=>{
 
 
 
-                          

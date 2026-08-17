@@ -78,7 +78,7 @@ export const DeliveryList = ({ onAddNew, onViewChallan }) => {
                     <td className="py-3 px-4 text-gray-600">
                       {new Date(item.dispatch_date).toLocaleDateString('en-IN')}
                     </td>
-                    <td className="py-3 px-4 text-right font-mono">{item.total_ordered_qty}</td>
+                    <td className="py-3 px-4 text-right font-mono  text-gray-800">{item.total_ordered_qty}</td>
                     <td className="py-3 px-4 text-right font-mono font-bold text-gray-900">
                       {item.total_delivered_qty}
                     </td>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, Eye, Edit, Trash2 } from 'lucide-react';
 import { getPurchaseOrders } from '../services/purchaseService';
 import { ViewPurchaseModal } from '../component/viewPurchaseModal';
+import { Pagination } from '../../../components/common/pagination';
 
 export const PurchaseListPage = ({ onOpenCreate }) => {
 
@@ -15,10 +16,10 @@ export const PurchaseListPage = ({ onOpenCreate }) => {
   const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
-const handleViewPurchase = (purchase) => {
-  setSelectedPurchase(purchase);
-  setIsViewModalOpen(true);
-};
+  const handleViewPurchase = (purchase) => {
+    setSelectedPurchase(purchase);
+    setIsViewModalOpen(true);
+  };
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(10);
   const [pagination, setPagination] = useState({
@@ -27,6 +28,11 @@ const handleViewPurchase = (purchase) => {
     totalRows: 0,
     totalPages: 1,
   });
+
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
 
   const fetchPurchases = async () => {
@@ -47,14 +53,14 @@ const handleViewPurchase = (purchase) => {
       if (response?.success) {
         setPurchases(response.data || []);
 
-         setPagination(
-         response.pagination || {
-          currentPage: currentPage,
-          limit,
-          totalRows: 0,
-          totalPages: 1,
-        }
-      );
+        setPagination(
+          response.pagination || {
+            currentPage: currentPage,
+            limit,
+            totalRows: 0,
+            totalPages: 1,
+          }
+        );
 
       } else {
         setError(response?.message || 'Failed to fetch purchase entries.');
@@ -136,7 +142,7 @@ const handleViewPurchase = (purchase) => {
         <div className="flex items-end">
           <button
             onClick={() => { setSearchQuery(''); setStartDate(''); setEndDate(''); }}
-            className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-xs hover:bg-gray-200"
+            className="w-full px-3 py-2 bg-gray-100 border  border-gray-300 rounded-lg text-xs text-gray-700 hover:bg-gray-200"
           >
             Clear Filters
           </button>
@@ -181,12 +187,12 @@ const handleViewPurchase = (purchase) => {
                   : '-'}</td>
                 <td className="py-3 px-4 text-center">
                   <div className="flex items-center justify-center gap-1">
-                    <button 
-                       onClick={() => handleViewPurchase(purchase)} 
-                       className="p-1.5 text-gray-500 hover:text-blue-600 rounded-md"
-                       title="View Details"
-                       >
-                        
+                    <button
+                      onClick={() => handleViewPurchase(purchase)}
+                      className="p-1.5 text-gray-500 hover:text-blue-600 rounded-md"
+                      title="View Details"
+                    >
+
                       <Eye size={15} />
                     </button>
                     <button className="p-1.5 text-gray-500 hover:text-emerald-600 rounded-md">
@@ -200,7 +206,15 @@ const handleViewPurchase = (purchase) => {
               </tr>
             ))}
           </tbody>
-        </table>  
+        </table>
+
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.totalRows}
+          itemsPerPage={pagination.limit}
+          onPageChange={handlePageChange}
+        />
       </div>
 
       <ViewPurchaseModal

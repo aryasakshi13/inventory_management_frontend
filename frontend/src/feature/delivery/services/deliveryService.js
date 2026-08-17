@@ -2,9 +2,9 @@ import axios from 'axios';
 
 // const BASE_URL = 'http://localhost:5001/api/delivery';
 
- const BASE_URL = window.location.hostname === 'localhost'
-            ? 'http://localhost:5001/api/delivery'
-            : 'https://www.namami-infotech.com/inventory/api/delivery';
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:5001/api/delivery'
+  : 'https://www.namami-infotech.com/inventory/api/delivery';
 
 
 export const createDeliveryChallan = async (payload) => {

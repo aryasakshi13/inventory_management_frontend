@@ -51,7 +51,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import ProtectedRoute from './components/protectedRoute';
 
 import './index.css';
-
 const Login = lazy(() => import('./pages/auth/login'));
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
 const MainModule = lazy(() => import('./pages/mainModule'));

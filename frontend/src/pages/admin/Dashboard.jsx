@@ -43,22 +43,22 @@ const Dashboard = () => {
 
     const userRole = (user?.role || user?.Role || 'employee').toLowerCase();
     const menuItems = [
-   
-        { name: 'Stocks In', icon: Boxes, allowedRoles: ['admin', 'branch admin', 'employee'] }, 
+
+        { name: 'Stocks In', icon: Boxes, allowedRoles: ['admin', 'branch admin', 'employee'] },
         { name: 'Item Issue', icon: Users, allowedRoles: ['admin', 'branch admin'] },
         { name: 'Stock Transfers', icon: GitFork, allowedRoles: ['admin', 'branch admin'] },
         { name: 'Branch Master', icon: FolderKanban, allowedRoles: ['admin'] },
         { name: 'Employee Master', icon: Users, allowedRoles: ['admin'] },
         { name: 'Items', icon: Layers, allowedRoles: ['admin', 'branch admin'] },
         { name: 'Vendors Control', icon: Truck, allowedRoles: ['admin'] },
-       
+
     ];
 
     const initialDefaultTab = menuItems.some(item => item.name === 'Items' && item.allowedRoles.includes(userRole))
-    ? 'Items'
-    : menuItems.find(item =>
-        item.allowedRoles.includes(userRole)
-      )?.name || 'Overview';
+        ? 'Items'
+        : menuItems.find(item =>
+            item.allowedRoles.includes(userRole)
+        )?.name || 'Overview';
 
     const [activeTab, setActiveTab] = useState(
         localStorage.getItem("activeTab") || initialDefaultTab
@@ -84,7 +84,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(false);
 
     const [employees, setEmployees] = useState([]);
-   
+
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -243,7 +243,7 @@ const Dashboard = () => {
         setIsModalOpen(true);
     };
 
-   
+
 
 
     const triggerAssignModal = (employee) => {
@@ -411,9 +411,9 @@ const Dashboard = () => {
 
 
                     {activeTab === 'Items' && (
-                        <ItemsDirectory 
-                        user={user}
-                        userRole={userRole} 
+                        <ItemsDirectory
+                            user={user}
+                            userRole={userRole}
                         />
                     )}
 
@@ -741,7 +741,7 @@ const Dashboard = () => {
 
                             <div className="space-y-1.5">
                                 <label className="text-slate-400 font-semibold block ml-0.5">Assigned Facility Branch</label>
-                               
+
                                 <select value={selectedOfficeId} onChange={(e) => setSelectedOfficeId(e.target.value)} className="w-full h-10 px-2 bg-[#0B0F19] border border-[#1E2943] text-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
                                     <option value="">-- Select Branch --</option>
                                     {offices.map(office => (
