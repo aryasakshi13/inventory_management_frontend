@@ -4,7 +4,7 @@ import { EmployeeHeader } from '../components/employeeHeader.jsx';
 import { EmployeeFilter } from '../components/employeeFilter.jsx';
 import { EmployeeTable } from '../components/employeeTable.jsx';
 import { EmployeeModal } from '../components/EmployeeModal';
-import { EmployeeViewModal } from '../components/EmployeeViewModal';
+import { EmployeeViewModal } from '../components/employeeViewModal';
 
 export const EmployeeListPage = () => {
   const {
