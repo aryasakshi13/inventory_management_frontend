@@ -23,10 +23,12 @@ export const EmployeeListPage = () => {
     formData,
     formError,
     submitting,
+    statusUpdatingId,
     handleFormChange,
     handleOpenModal,
     handleCloseModal,
     handleSubmit,
+    handleToggleStatus,
     handleDelete,
     isViewModalOpen,
     viewingEmployee,
@@ -54,6 +56,8 @@ export const EmployeeListPage = () => {
         onEdit={handleOpenModal}
         onDelete={handleDelete}
         onView={handleOpenViewModal}
+        onToggleStatus={handleToggleStatus}
+        statusUpdatingId={statusUpdatingId}
       />
 
       <EmployeeModal

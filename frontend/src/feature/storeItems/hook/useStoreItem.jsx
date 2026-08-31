@@ -15,6 +15,7 @@ export const useStoreItems = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedItemType, setSelectedItemType] = useState('all');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -65,17 +66,28 @@ export const useStoreItems = () => {
       const thresh = item.min_threshold ?? item.minThreshold ?? 10;
       const status = getItemStatus(item.quantity, thresh);
       const name = item.item_name || item.name || '';
-      const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
+      const itemType = item.item_type || 'raw_material';
+
+      const matchesSearch =
+        name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.linked_product_name || '').toLowerCase().includes(searchQuery.toLowerCase());
+
       const matchesCategory = selectedCategory ? item.category === selectedCategory : true;
       const matchesStatus = selectedStatus ? status === selectedStatus : true;
-      return matchesSearch && matchesCategory && matchesStatus;
+      const matchesItemType = selectedItemType === 'all' ? true : itemType === selectedItemType;
+
+      return matchesSearch && matchesCategory && matchesStatus && matchesItemType;
     });
-  }, [items, searchQuery, selectedCategory, selectedStatus]);
+  }, [items, searchQuery, selectedCategory, selectedStatus, selectedItemType]);
 
   const metrics = useMemo(() => {
     let inStock = 0;
     let lowStock = 0;
     let outOfStock = 0;
+    let rawCount = 0;
+    let finishedCount = 0;
+    let consumableCount = 0;
 
     items.forEach((item) => {
       const thresh = item.min_threshold ?? item.minThreshold ?? 10;
@@ -83,9 +95,22 @@ export const useStoreItems = () => {
       if (status === 'In Stock') inStock++;
       if (status === 'Low Stock') lowStock++;
       if (status === 'Out of Stock') outOfStock++;
+
+      const type = item.item_type || 'raw_material';
+      if (type === 'finished_good') finishedCount++;
+      else if (type === 'consumable') consumableCount++;
+      else rawCount++;
     });
 
-    return { total: items.length, inStock, lowStock, outOfStock };
+    return { 
+      total: items.length, 
+      inStock, 
+      lowStock, 
+      outOfStock,
+      rawCount,
+      finishedCount,
+      consumableCount
+    };
   }, [items]);
 
   const handleSaveItem = async (formData) => {
@@ -138,10 +163,13 @@ export const useStoreItems = () => {
     setSelectedCategory,
     selectedStatus,
     setSelectedStatus,
+    selectedItemType,
+    setSelectedItemType,
     resetFilters: () => {
       setSearchQuery('');
       setSelectedCategory('');
       setSelectedStatus('');
+      setSelectedItemType('all');
     },
     isModalOpen,
     editingItem,
@@ -160,4 +188,4 @@ export const useStoreItems = () => {
     handleSaveItem,
     handleDeleteItem,
   };
-};
+};

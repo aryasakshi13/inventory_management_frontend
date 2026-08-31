@@ -1,0 +1,488 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  Package,
+  Plus,
+  Search,
+  Truck,
+  Factory,
+  CheckCircle,
+  X,
+  Edit2,
+  Trash2,
+  Loader2,
+  Layers,
+  Info,
+  AlertCircle
+} from "lucide-react";
+
+const API_BASE = "http://localhost:5001/api/products";
+
+const ProductTab = () => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterMode, setFilterMode] = useState("all");
+
+  // Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const [formData, setFormData] = useState({
+    product_name: "",
+    description: "",
+    fulfilment_mode: "site_assembly", // 'site_assembly' | 'in_house_manufacturing'
+  });
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(API_BASE);
+      const list = Array.isArray(res?.data)
+        ? res.data
+        : Array.isArray(res?.data?.data)
+        ? res.data.data
+        : [];
+      setProducts(list);
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const openCreateModal = () => {
+    setEditingProduct(null);
+    setFormData({
+      product_name: "",
+      description: "",
+      fulfilment_mode: "site_assembly",
+    });
+    setFormError("");
+    setShowModal(true);
+  };
+
+  const openEditModal = (product) => {
+    setEditingProduct(product);
+    setFormData({
+      product_name: product.product_name || "",
+      description: product.description || "",
+      fulfilment_mode: product.fulfilment_mode || "site_assembly",
+    });
+    setFormError("");
+    setShowModal(true);
+  };
+
+  const handleSaveProduct = async (e) => {
+    e.preventDefault();
+    if (!formData.product_name.trim()) {
+      setFormError("Product name is required");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setFormError("");
+
+      if (editingProduct) {
+        await axios.put(`${API_BASE}/${editingProduct.id}`, formData);
+      } else {
+        await axios.post(API_BASE, formData);
+      }
+
+      setShowModal(false);
+      fetchProducts();
+    } catch (err) {
+      console.error("Save product error:", err);
+      setFormError(err.response?.data?.message || "Failed to save product.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteProduct = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
+    try {
+      await axios.delete(`${API_BASE}/${id}`);
+      fetchProducts();
+    } catch (err) {
+      console.error("Delete product error:", err);
+      alert(err.response?.data?.message || "Failed to delete product.");
+    }
+  };
+
+  // Filtered Products
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch =
+      (p.product_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.description || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesMode =
+      filterMode === "all" ||
+      (p.fulfilment_mode || "site_assembly") === filterMode;
+
+    return matchesSearch && matchesMode;
+  });
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-xs border border-slate-200">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <Package className="text-blue-600" size={24} />
+            Product Master
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Manage your product catalog and configure fulfillment modes (Site Assembly vs In-House Manufacturing).
+          </p>
+        </div>
+
+        <button
+          onClick={openCreateModal}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
+        >
+          <Plus size={16} />
+          Create New Product
+        </button>
+      </div>
+
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+            <Layers size={22} />
+          </div>
+          <div>
+            <div className="text-xl font-bold text-slate-900">{products.length}</div>
+            <div className="text-xs text-slate-500 font-medium">Total Products</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+            <Truck size={22} />
+          </div>
+          <div>
+            <div className="text-xl font-bold text-slate-900">
+              {products.filter((p) => (p.fulfilment_mode || "site_assembly") === "site_assembly").length}
+            </div>
+            <div className="text-xs text-slate-500 font-medium">Site Assembly / Direct Dispatch</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+            <Factory size={22} />
+          </div>
+          <div>
+            <div className="text-xl font-bold text-slate-900">
+              {products.filter((p) => p.fulfilment_mode === "in_house_manufacturing").length}
+            </div>
+            <div className="text-xs text-slate-500 font-medium">In-House Manufacturing</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters & Search */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <input
+            type="text"
+            placeholder="Search products by name or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+          />
+        </div>
+
+        {/* Filter Pills */}
+        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+          <button
+            onClick={() => setFilterMode("all")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              filterMode === "all"
+                ? "bg-slate-900 text-white"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            All Modes ({products.length})
+          </button>
+          <button
+            onClick={() => setFilterMode("site_assembly")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
+              filterMode === "site_assembly"
+                ? "bg-amber-600 text-white"
+                : "bg-amber-50 text-amber-700 hover:bg-amber-100"
+            }`}
+          >
+            <Truck size={14} />
+            Site Assembly
+          </button>
+          <button
+            onClick={() => setFilterMode("in_house_manufacturing")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
+              filterMode === "in_house_manufacturing"
+                ? "bg-emerald-600 text-white"
+                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+            }`}
+          >
+            <Factory size={14} />
+            In-House Manufacturing
+          </button>
+        </div>
+      </div>
+
+      {/* Products Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        {loading ? (
+          <div className="p-12 flex flex-col items-center justify-center text-slate-400">
+            <Loader2 className="animate-spin text-blue-600 mb-2" size={28} />
+            <p className="text-xs">Loading products...</p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="p-12 text-center text-slate-400">
+            <Package className="mx-auto mb-2 text-slate-300" size={36} />
+            <p className="text-sm font-semibold text-slate-700">No products found</p>
+            <p className="text-xs text-slate-400 mt-1">
+              {searchTerm || filterMode !== "all"
+                ? "Try adjusting your search or filters"
+                : "Get started by adding your first product"}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+                  <th className="py-3 px-4">#</th>
+                  <th className="py-3 px-4">Product Name</th>
+                  <th className="py-3 px-4">Fulfilment Mode</th>
+                  <th className="py-3 px-4">Fulfillment Details</th>
+                  <th className="py-3 px-4">Description</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredProducts.map((p, idx) => {
+                  const isMfg = p.fulfilment_mode === "in_house_manufacturing";
+                  return (
+                    <tr key={p.id || idx} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3 px-4 text-slate-400 font-medium">{idx + 1}</td>
+                      <td className="py-3 px-4 font-bold text-slate-900">
+                        <div className="flex items-center gap-2">
+                          <span className="p-1.5 rounded-md bg-slate-100 text-slate-700">
+                            <Package size={14} />
+                          </span>
+                          {p.product_name}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        {isMfg ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <Factory size={12} />
+                            In-House Manufacturing
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                            <Truck size={12} />
+                            Site Assembly / Direct Dispatch
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-slate-600">
+                        {isMfg ? (
+                          <span className="text-slate-500">
+                            Finished Good Stock Check ➔ Production Order on Shortage ➔ Dispatch Finished Good
+                          </span>
+                        ) : (
+                          <span className="text-slate-500">
+                            Project BOQ / BOM Calc ➔ Dispatch Individual Raw Material Items (No Production)
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-slate-500 max-w-xs truncate">
+                        {p.description || "-"}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => openEditModal(p)}
+                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit Product"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(p.id, p.product_name)}
+                            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Delete Product"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* CREATE / EDIT PRODUCT MODAL */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 text-xs">
+          <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="px-6 py-4 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Package className="text-blue-600" size={20} />
+                <h2 className="text-base font-bold text-slate-900">
+                  {editingProduct ? "Edit Product" : "Create New Product"}
+                </h2>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveProduct} className="p-6 space-y-5">
+              {formError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 flex items-center gap-2">
+                  <AlertCircle size={16} />
+                  <span>{formError}</span>
+                </div>
+              )}
+
+              {/* Product Name */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                  Product Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.product_name}
+                  onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
+                  placeholder="e.g. 5kW On-Grid Solar System, Solar Inverter 5kVA, Laptop Pro"
+                  className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+
+              {/* Fulfilment Mode Selector */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+                  Fulfilment Mode *
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Mode 1: Site Assembly */}
+                  <div
+                    onClick={() => setFormData({ ...formData, fulfilment_mode: "site_assembly" })}
+                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${
+                      formData.fulfilment_mode === "site_assembly"
+                        ? "border-amber-500 bg-amber-50/50 shadow-xs"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+                        <Truck size={16} />
+                      </div>
+                      {formData.fulfilment_mode === "site_assembly" && (
+                        <CheckCircle className="text-amber-600" size={18} />
+                      )}
+                    </div>
+                    <div className="font-bold text-slate-900 text-xs">Site Assembly</div>
+                    <div className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                      Direct Material Dispatch. Individual BOM items dispatch on Delivery Challan (No Production Order).
+                    </div>
+                  </div>
+
+                  {/* Mode 2: In-House Manufacturing */}
+                  <div
+                    onClick={() => setFormData({ ...formData, fulfilment_mode: "in_house_manufacturing" })}
+                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${
+                      formData.fulfilment_mode === "in_house_manufacturing"
+                        ? "border-emerald-500 bg-emerald-50/50 shadow-xs"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                        <Factory size={16} />
+                      </div>
+                      {formData.fulfilment_mode === "in_house_manufacturing" && (
+                        <CheckCircle className="text-emerald-600" size={18} />
+                      )}
+                    </div>
+                    <div className="font-bold text-slate-900 text-xs">In-House Manufacturing</div>
+                    <div className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                      Checks finished good stock. Creates Production Order for shortage. Dispatches finished product.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                  Description / Specifications (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter product description, technical specifications, or usage notes..."
+                  className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  disabled={isSubmitting}
+                  className="px-4 py-2.5 border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-xl shadow-xs transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      Saving...
+                    </>
+                  ) : editingProduct ? (
+                    "Update Product"
+                  ) : (
+                    "Create Product"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ProductTab;

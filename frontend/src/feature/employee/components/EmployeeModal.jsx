@@ -192,14 +192,14 @@ export const EmployeeModal = ({
             {/* Location / Branch */}
             <div>
               <label className="block font-medium text-gray-700 mb-1">
-                Location / Branch
+                Location / Branch *
               </label>
 
               <input
                 type="text"
                 name="location_branch"
-                placeholder="e.g. Delhi Branch"
-                value={formData.location_branch}
+                placeholder="e.g. Jaipur Main Branch"
+                value={formData.location_branch || ''}
                 onChange={onChange}
                 required
                 className={inputClass}
@@ -209,14 +209,14 @@ export const EmployeeModal = ({
             {/* Department */}
             <div>
               <label className="block font-medium text-gray-700 mb-1">
-                Department
+                Department *
               </label>
 
               <input
                 type="text"
                 name="department"
                 placeholder="e.g. Operations"
-                value={formData.department}
+                value={formData.department || ''}
                 required
                 onChange={onChange}
                 className={inputClass}
@@ -226,65 +226,41 @@ export const EmployeeModal = ({
             {/* Designation */}
             <div>
               <label className="block font-medium text-gray-700 mb-1">
-                Designation
+                Designation *
               </label>
 
               <input
                 type="text"
                 name="designation"
-                placeholder="e.g. Store Executive"
-                value={formData.designation}
+                placeholder="e.g. Site Engineer"
+                value={formData.designation || ''}
                 onChange={onChange}
                 required
                 className={inputClass}
               />
-            </div>
-
-            {/* Status */}
-            <div>
-              <label className="block font-medium text-gray-700 mb-1">
-                Status *
-              </label>
-
-              <select
-                name="employee_status"
-                value={formData.employee_status}
-                onChange={onChange}
-                className={selectClass}
-                required
-              >
-                <option
-                  value="Active"
-                  className="text-gray-900 bg-white"
-                >
-                  Active
-                </option>
-
-                <option
-                  value="Inactive"
-                  className="text-gray-900 bg-white"
-                >
-                  Inactive
-                </option>
-              </select>
             </div>
 
             {/* Password */}
             <div>
               <label className="block font-medium text-gray-700 mb-1">
                 {editingId
-                  ? 'Password (Blank = Keep Unchanged)'
-                  : 'Password *'}
+                  ? 'Password (Leave Blank to Keep Current)'
+                  : 'Login Password *'}
               </label>
 
               <input
                 type="password"
                 name="password_hash"
                 placeholder="••••••••"
-                value={formData.password_hash}
+                value={formData.password_hash || ''}
                 onChange={onChange}
                 className={inputClass}
               />
+              {!editingId && (
+                <span className="text-[10px] text-gray-400 mt-0.5 block">
+                  Defaults to 123456 if left blank
+                </span>
+              )}
             </div>
           </div>
 

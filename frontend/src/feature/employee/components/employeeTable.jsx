@@ -1,7 +1,15 @@
 import React from 'react';
 import { Eye, Edit3, Trash2, ShieldCheck, Mail, Phone, MapPin } from 'lucide-react';
 
-export const EmployeeTable = ({ employees, loading, onEdit, onDelete, onView }) => {
+export const EmployeeTable = ({ 
+  employees, 
+  loading, 
+  onEdit, 
+  onDelete, 
+  onView,
+  onToggleStatus,
+  statusUpdatingId
+}) => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
       {loading ? (
@@ -22,52 +30,72 @@ export const EmployeeTable = ({ employees, loading, onEdit, onDelete, onView }) 
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {employees.map((emp) => (
-                <tr key={emp.id} className="hover:bg-gray-50/70">
-                  <td className="py-3 px-4 font-mono font-bold text-blue-600">
-                    {emp.employee_code}
-                  </td>
+              {employees.map((emp) => {
+                const isActive = (emp.employee_status === 'Active' || emp.status === 'active');
+                const isUpdating = statusUpdatingId === emp.id;
 
-                  <td className="py-3 px-4">
-                    <div className="font-semibold text-gray-800">{emp.employee_name}</div>
-                    <div className="flex items-center gap-3 text-[11px] text-gray-500 mt-0.5">
-                      <span className="flex items-center gap-1">
-                        <Mail size={12} /> {emp.email_id}
+                return (
+                  <tr key={emp.id} className="hover:bg-gray-50/70">
+                    <td className="py-3 px-4 font-mono font-bold text-blue-600">
+                      {emp.employee_code}
+                    </td>
+
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-gray-800">{emp.employee_name}</div>
+                      <div className="flex items-center gap-3 text-[11px] text-gray-500 mt-0.5">
+                        <span className="flex items-center gap-1">
+                          <Mail size={12} /> {emp.email_id}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Phone size={12} /> {emp.mobile_number}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1 font-semibold text-gray-700">
+                        <ShieldCheck size={13} className="text-blue-500" />
+                        {emp.role}
+                      </div>
+                      <div className="text-[11px] text-gray-400">
+                        {emp.department || 'N/A'} {emp.designation ? `(${emp.designation})` : ''}
+                      </div>
+                    </td>
+
+                    <td className="py-3 px-4">
+                      <span className="flex items-center gap-1 text-gray-600">
+                        <MapPin size={12} className="text-gray-400" />
+                        {emp.location_branch || 'Not Assigned'}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Phone size={12} /> {emp.mobile_number}
-                      </span>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-1 font-semibold text-gray-700">
-                      <ShieldCheck size={13} className="text-blue-500" />
-                      {emp.role}
-                    </div>
-                    <div className="text-[11px] text-gray-400">
-                      {emp.department || 'N/A'} {emp.designation ? `(${emp.designation})` : ''}
-                    </div>
-                  </td>
-
-                  <td className="py-3 px-4">
-                    <span className="flex items-center gap-1 text-gray-600">
-                      <MapPin size={12} className="text-gray-400" />
-                      {emp.location_branch || 'Not Assigned'}
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-4 text-center">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        emp.employee_status === 'Active'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-rose-100 text-rose-700'
-                      }`}
-                    >
-                      {emp.employee_status}
-                    </span>
-                  </td>
+                    {/* Status with Modern Toggle Switch */}
+                    <td className="py-3 px-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          disabled={isUpdating}
+                          onClick={() => onToggleStatus && onToggleStatus(emp.id, isActive ? 'Active' : 'Inactive')}
+                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            isActive ? 'bg-emerald-500' : 'bg-slate-300'
+                          } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
+                          title={isActive ? 'Click to make Inactive' : 'Click to make Active'}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                              isActive ? 'translate-x-4' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                        <span
+                          className={`text-xs font-semibold ${
+                            isActive ? 'text-emerald-700' : 'text-slate-500'
+                          }`}
+                        >
+                          {isUpdating ? 'Saving...' : (isActive ? 'Active' : 'Inactive')}
+                        </span>
+                      </div>
+                    </td>
 
                   <td className="py-3 px-4 text-center">
                     <div className="flex justify-center items-center gap-1">
@@ -98,7 +126,8 @@ export const EmployeeTable = ({ employees, loading, onEdit, onDelete, onView }) 
                     </div>
                   </td>
                 </tr>
-              ))}
+              );
+            })}
             </tbody>
           </table>
         </div>

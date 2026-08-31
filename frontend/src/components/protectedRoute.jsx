@@ -9,20 +9,15 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
         return <Navigate to="/login" replace />;
     }
 
-    // const role = user.role?.toLowerCase();
-
-
-    if (allowedRoles && !allowedRoles.includes(user.role.toLowerCase())) {
-        return <Navigate to="/login" replace />; 
+    if (allowedRoles && allowedRoles.length > 0) {
+        const userRole = (user.role || '').toLowerCase().trim();
+        const normalizedAllowedRoles = allowedRoles.map(r => r.toLowerCase().trim());
+        
+        if (!normalizedAllowedRoles.includes(userRole)) {
+            console.warn(`Access blocked: Role '${userRole}' is not allowed on this route.`);
+            return <Navigate to="/login" replace />; 
+        }
     }
-
-//     if (allowedRoles && !allowedRoles.includes(role)) {
-//     console.log("Role blocked:", role);
-//     return <Navigate to="/login" replace />;
-//   }
-
-    //  console.log("Access granted for:", role);
-    
 
     return children;
 };

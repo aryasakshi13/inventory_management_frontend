@@ -21,11 +21,12 @@ export const PurchaseEntryPage = ({ onCancel, onSaveSuccess }) => {
   const navigate = useNavigate();
 
   const [saveError, setSaveError] = useState('');
+  const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     headerData,
-    updateHeader,
+    updateHeader: rawUpdateHeader,
     items,
     addItemRow,
     removeItemRow,
@@ -33,6 +34,17 @@ export const PurchaseEntryPage = ({ onCancel, onSaveSuccess }) => {
     totals,
     resetForm,
   } = usePurchaseEntry();
+
+  const updateHeader = (field, value) => {
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+    rawUpdateHeader(field, value);
+  };
 
   console.log('PurchaseEntryPage Rendered');
 
@@ -49,6 +61,7 @@ export const PurchaseEntryPage = ({ onCancel, onSaveSuccess }) => {
     console.log('========================================');
 
     setSaveError('');
+    const newErrors = {};
 
     // =========================================================
     // VALIDATION
@@ -56,26 +69,25 @@ export const PurchaseEntryPage = ({ onCancel, onSaveSuccess }) => {
 
     // Bill No
     if (!headerData.bill_no?.trim()) {
-      const msg = 'Bill No is required and must be unique.';
-      console.warn('API NOT CALLED - Validation failed:', msg);
-      setSaveError(msg);
-      return;
+      newErrors.bill_no = 'Bill No is required.';
+    } else if (!/^[a-zA-Z0-9\-_]+$/.test(headerData.bill_no.trim())) {
+      newErrors.bill_no = 'Bill No can only contain letters, numbers, hyphens (-), and underscores (_). Slashes (/) and other symbols are not allowed.';
+    } else if (!/[a-zA-Z0-9]/.test(headerData.bill_no.trim())) {
+      newErrors.bill_no = 'Bill No must contain at least one letter or number and cannot be only symbols.';
     }
 
     // Vendor Name
     if (!headerData.vendor_name?.trim()) {
-      const msg = 'Vendor Name is required.';
-      console.warn('API NOT CALLED - Validation failed:', msg);
-      setSaveError(msg);
-      return;
+      newErrors.vendor_name = 'Vendor Name is required.';
     }
 
     // Invoice No
     if (!headerData.invoice_no?.trim()) {
-      const msg = 'Invoice No is required.';
-      console.warn('API NOT CALLED - Validation failed:', msg);
-      setSaveError(msg);
-      return;
+      newErrors.invoice_no = 'Invoice No is required.';
+    } else if (!/^[a-zA-Z0-9\-_]+$/.test(headerData.invoice_no.trim())) {
+      newErrors.invoice_no = 'Invoice No can only contain letters, numbers, hyphens (-), and underscores (_). Slashes (/) and other symbols are not allowed.';
+    } else if (!/[a-zA-Z0-9]/.test(headerData.invoice_no.trim())) {
+      newErrors.invoice_no = 'Invoice No must contain at least one letter or number and cannot be only symbols.';
     }
 
     // Vendor Phone
@@ -83,20 +95,47 @@ export const PurchaseEntryPage = ({ onCancel, onSaveSuccess }) => {
       headerData.vendor_phone &&
       !/^\d{10}$/.test(headerData.vendor_phone)
     ) {
-      const msg = 'Vendor Phone must be exactly 10 digits.';
-      console.warn('API NOT CALLED - Validation failed:', msg);
-      setSaveError(msg);
-      return;
+      newErrors.vendor_phone = 'Vendor Phone must be exactly 10 digits.';
     }
 
     // Item Name Validation
     const invalidItem = items.find((i) => !i.itemName?.trim());
     if (invalidItem) {
-      const msg = 'Please select or enter an Item Name for all item rows.';
-      console.warn('API NOT CALLED - Validation failed:', msg);
-      setSaveError(msg);
+      newErrors.items = 'Please select or enter an Item Name for all item rows.';
+    }
+
+    // Quantity Validation
+    const invalidQty = items.find((i) => !i.quantity || Number(i.quantity) <= 0);
+    if (invalidQty) {
+      newErrors.items = newErrors.items || 'Quantity must be greater than 0 for all items.';
+    }
+
+    // Duplicate Item + Brand Validation
+    const seenCombos = new Set();
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (!it.itemName?.trim()) continue;
+      const itemIdKey = String(it.item_id || it.itemId || it.itemName).trim().toLowerCase();
+      const brandKey = String(it.brand || '').trim().toLowerCase();
+      const comboKey = `${itemIdKey}__${brandKey}`;
+
+      if (seenCombos.has(comboKey)) {
+        const itemDisplayName = it.itemName || `Item #${it.item_id}`;
+        const brandDisplayName = it.brand?.trim() ? ` with brand "${it.brand.trim()}"` : '';
+        newErrors.items = `Duplicate item detected: "${itemDisplayName}"${brandDisplayName} cannot be added multiple times. Please combine their quantity into a single row.`;
+        break;
+      }
+      seenCombos.add(comboKey);
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setSaveError(Object.values(newErrors)[0]);
+      console.warn('API NOT CALLED - Validation failed:', newErrors);
       return;
     }
+
+    setErrors({});
 
     // =========================================================
     // DEBUG - CURRENT FORM DATA
@@ -170,11 +209,14 @@ export const PurchaseEntryPage = ({ onCancel, onSaveSuccess }) => {
       // Purchase Items
       // -----------------------------
       items: items.map((item) => ({
-        item_name: item.itemName,
+        item_id: item.item_id || item.itemId || null,
+        brand: item.brand || '',
         quantity: Number(item.quantity || 0),
+        qty: Number(item.quantity || 0),
         rate: Number(item.rate || 0),
         tax_percent: Number(item.taxPercent || 0),
         discount: Number(item.discount || 0),
+        discount_amount: Number(item.discount || 0),
         line_total: Number(item.lineTotal || 0),
       })),
 
@@ -274,6 +316,7 @@ export const PurchaseEntryPage = ({ onCancel, onSaveSuccess }) => {
       <PurchaseHeaderForm
         headerData={headerData}
         updateHeader={updateHeader}
+        errors={errors}
       />
 
       {/* =====================================================
@@ -285,6 +328,7 @@ export const PurchaseEntryPage = ({ onCancel, onSaveSuccess }) => {
         addItemRow={addItemRow}
         removeItemRow={removeItemRow}
         updateItemRow={updateItemRow}
+        errors={errors}
       />
 
       {/* =====================================================

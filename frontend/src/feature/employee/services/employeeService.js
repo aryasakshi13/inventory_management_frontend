@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:5001/api/employees';
+const getBaseUrl = () => {
+  return window.location.hostname === 'localhost'
+    ? 'http://localhost:5001/api/employees'
+    : 'https://www.namami-infotech.com/inventory/api/employees';
+};
+
+const BASE_URL = getBaseUrl();
 
 // Fetch employees with backend query params
 export const getAllEmployees = async (params = {}) => {
@@ -29,6 +35,19 @@ export const updateEmployee = async (id, employeeData) => {
   return response.data;
 };
 
+// Toggle or update status (Active / Inactive)
+export const toggleEmployeeStatus = async (id, currentStatus) => {
+  const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+  const response = await axios.put(`${BASE_URL}/${id}/status`, {
+    employee_status: newStatus,
+    status: newStatus.toLowerCase()
+  }, {
+    withCredentials: true,
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.data;
+};
+
 // Delete employee
 export const deleteEmployee = async (id) => {
   const response = await axios.delete(`${BASE_URL}/${id}`, {
@@ -46,6 +65,8 @@ export const getRoles = async () => {
 };
 
 export const getNextEmployeeCode = async () => {
-  const response = await axios.get('/api/employees/next-code');
+  const response = await axios.get(`${BASE_URL}/next-code`, {
+    withCredentials: true,
+  });
   return response.data; // returns { success: true, employee_code: "EMP0001" }
 };

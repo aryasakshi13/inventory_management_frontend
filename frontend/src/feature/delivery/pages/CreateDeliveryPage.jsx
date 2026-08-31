@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Send, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Send, ArrowLeft, PackageCheck, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
 import { useDeliveryForm } from '../hooks/useDeliveryForm';
 import { fetchSalesOrders } from '../../client/services/salesOrderService';
-import { createDeliveryChallan } from '../services/deliveryService';
+import { fetchAllBOMPreparations } from '../../bomPreparation/services/bomPreparationService';
+import { createDeliveryChallan, fetchOrderDispatchSummary } from '../services/deliveryService';
 
 export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
   const [salesOrders, setSalesOrders] = useState([]);
   const [selectedOrderId, setSelectedOrderId] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedOrderSummary, setSelectedOrderSummary] = useState(null);
+  const [preparationId, setPreparationId] = useState(null);
+  const [orderItemsList, setOrderItemsList] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [loadingSummary, setLoadingSummary] = useState(false);
   
   const {
     formData,
     items,
+    populateItems,
     loading,
     error,
     setError,
@@ -24,17 +29,43 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
     resetForm,
   } = useDeliveryForm();
 
-  // Fetch all sales orders
+  // Fetch sales orders and filter to ONLY those with a prepared BOM and remaining balance
   useEffect(() => {
     const loadSalesOrders = async () => {
       try {
         setLoadingOrders(true);
-        const res = await fetchSalesOrders();
-        if (res?.data) {
-          setSalesOrders(res.data);
-        } else if (Array.isArray(res)) {
-          setSalesOrders(res);
-        }
+        const [res, prepRes] = await Promise.all([
+          fetchSalesOrders(),
+          fetchAllBOMPreparations().catch(() => ({ data: [] }))
+        ]);
+
+        const ordersList = res?.data ?? (Array.isArray(res) ? res : []);
+        const prepsList = prepRes?.data ?? (Array.isArray(prepRes) ? prepRes : []);
+
+        const prepMap = new Map();
+        prepsList.forEach((p) => {
+          if (p.sales_order_id) {
+            prepMap.set(Number(p.sales_order_id), p);
+          }
+        });
+
+        // Filter to orders with prepared BOM
+        const preparedOrdersOnly = ordersList
+          .filter((ord) => {
+            const ordId = Number(ord.Id || ord.id);
+            const prep = prepMap.get(ordId);
+            return prep && Array.isArray(prep.items) && prep.items.length > 0;
+          })
+          .map((ord) => {
+            const ordId = Number(ord.Id || ord.id);
+            const prep = prepMap.get(ordId);
+            return {
+              ...ord,
+              preparationId: prep.id,
+            };
+          });
+
+        setSalesOrders(preparedOrdersOnly);
       } catch (err) {
         console.error('Failed to load sales orders:', err);
       } finally {
@@ -44,15 +75,19 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
     loadSalesOrders();
   }, []);
 
-  // Handle Sales Order selection change
-  const handleOrderSelect = (e) => {
+  // Handle Sales Order selection change & load dispatch summary
+  const handleOrderSelect = async (e) => {
     const orderId = e.target.value;
     setSelectedOrderId(orderId);
+    setSelectedOrderSummary(null);
+    setPreparationId(null);
+    setOrderItemsList([]);
+    setError(null);
 
     if (!orderId) {
-      setSelectedOrder(null);
       handleHeaderChange({ target: { name: 'customer_name', value: '' } });
       handleHeaderChange({ target: { name: 'delivery_address', value: '' } });
+      populateItems([]);
       return;
     }
 
@@ -61,7 +96,6 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
     );
 
     if (found) {
-      setSelectedOrder(found);
       const cName = found.clientName || found.companyName || found.customer_name || '';
       const address = found.shippingAddress || found.billingAddress || '';
 
@@ -70,13 +104,67 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
 
       const autoChallanNo = `DC-${found.poNo || found.Id || Date.now()}`;
       handleHeaderChange({ target: { name: 'challan_no', value: autoChallanNo } });
+      setPreparationId(found.preparationId || null);
+    }
+
+    try {
+      setLoadingSummary(true);
+      const summaryRes = await fetchOrderDispatchSummary(orderId);
+      if (summaryRes?.success && summaryRes.data) {
+        const data = summaryRes.data;
+        setSelectedOrderSummary(data);
+        setPreparationId(data.preparation_id || null);
+
+        const allItems = (data.items || []).map((it, idx) => ({
+          key: it.key || `prep-item-${it.item_id}-${idx}`,
+          item_id: it.item_id,
+          product_id: it.product_id || it.item_id,
+          item_name: it.item_name,
+          brand: it.brand,
+          unit: it.unit,
+          category: it.category || 'General',
+          required_qty: it.required_qty,
+          already_dispatched_qty: it.already_dispatched_qty,
+          balance_qty: it.balance_qty,
+          warehouse_stock: it.warehouse_stock,
+          suggested_dispatch_qty: it.suggested_dispatch_qty,
+        }));
+
+        setOrderItemsList(allItems);
+
+        // Auto-populate ALL BOM items as individual rows in the dispatch table
+        const allBOMRows = allItems.map((it, idx) => ({
+          id: Date.now() + idx + Math.random(),
+          item_id: it.item_id,
+          product_id: it.product_id,
+          item_name: it.item_name,
+          brand: it.brand || '',
+          unit: it.unit || 'Nos',
+          category: it.category,
+          required_qty: it.required_qty,
+          already_dispatched_qty: it.already_dispatched_qty,
+          balance_qty: it.balance_qty,
+          warehouse_stock: it.warehouse_stock,
+          ordered_qty: it.balance_qty,
+          delivered_qty: it.suggested_dispatch_qty ?? (it.warehouse_stock > 0 ? Math.min(it.balance_qty, it.warehouse_stock) : 0),
+          selected_order_item_key: it.key,
+        }));
+
+        populateItems(allBOMRows);
+      }
+    } catch (sumErr) {
+      console.warn('Could not fetch order dispatch summary:', sumErr);
+    } finally {
+      setLoadingSummary(false);
     }
   };
 
   const handleReset = () => {
     resetForm();
     setSelectedOrderId('');
-    setSelectedOrder(null);
+    setSelectedOrderSummary(null);
+    setPreparationId(null);
+    setOrderItemsList([]);
   };
 
   const handleSubmit = async (e) => {
@@ -87,36 +175,42 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
     if (!selectedOrderId) return setError('Please select a Sales Order / PO Number.');
     if (!formData.dispatch_date) return setError('Dispatch date is required.');
 
+    // Filter items to dispatch (only items with delivered_qty > 0)
+    const itemsToDispatch = items.filter((row) => Number(row.delivered_qty) > 0);
+
+    if (itemsToDispatch.length === 0) {
+      return setError('Please enter a Dispatch Quantity greater than 0 for at least one item.');
+    }
+
     for (let i = 0; i < items.length; i++) {
       const row = items[i];
-      const ordered = Number(row.ordered_qty) || 0;
       const delivered = Number(row.delivered_qty) || 0;
+      const balance = Number(row.balance_qty ?? row.ordered_qty) || 0;
+      const stock = Number(row.warehouse_stock ?? Infinity);
 
-      if (!row.item_name.trim()) {
-        return setError(`Please select an item at row #${i + 1}`);
-      }
-      if (ordered <= 0) {
-        return setError(`Ordered quantity must be greater than 0 at row #${i + 1}`);
-      }
-      if (delivered < 0) {
-        return setError(`Delivered quantity cannot be negative at row #${i + 1}`);
-      }
-      if (delivered > ordered) {
-        return setError(`Delivered quantity cannot exceed ordered quantity for "${row.item_name}"`);
+      if (delivered > 0) {
+        if (!row.item_name?.trim()) {
+          return setError(`Please select a valid item at row #${i + 1}`);
+        }
+        if (balance > 0 && delivered > balance) {
+          return setError(`Cannot dispatch ${delivered} units for "${row.item_name}". Remaining balance is only ${balance}.`);
+        }
+        if (delivered > stock) {
+          return setError(`Warehouse stock insufficient for "${row.item_name}". Available stock: ${stock}, Requested: ${delivered}.`);
+        }
       }
     }
 
     const payload = {
       order_id: Number(selectedOrderId) || selectedOrderId,
+      preparation_id: preparationId || null,
       dispatch_date: formData.dispatch_date,
       transporter_name: formData.transporter_name || '',
       vehicle_no: formData.vehicle_no || '',
-      items: items.map((item) => ({
-        product_id: item.product_id ? Number(item.product_id) : null,
-        item_name: item.item_name,
-        category: item.category || 'General',
-        ordered_qty: Number(item.ordered_qty),
-        delivered_qty: Number(item.delivered_qty),
+      delivery_items: itemsToDispatch.map((item) => ({
+        item_id: Number(item.item_id || item.product_id || item.id) || null,
+        ordered_qty: Number(item.required_qty || item.ordered_qty) || 0,
+        delivered_qty: Number(item.delivered_qty) || 0,
       })),
     };
 
@@ -127,7 +221,9 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
       if (res.success) {
         resetForm();
         setSelectedOrderId('');
-        setSelectedOrder(null);
+        setSelectedOrderSummary(null);
+        setPreparationId(null);
+        setOrderItemsList([]);
         if (onSuccess) onSuccess();
       }
     } catch (err) {
@@ -151,15 +247,16 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
             </button>
           )}
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Create Delivery Challan</h1>
-            <p className="text-xs text-gray-500">Dispatch items and track full or partial fulfillments</p>
+            <h1 className="text-xl font-bold text-gray-800">Create Delivery Challan & Dispatch</h1>
+            <p className="text-xs text-gray-500">Supports Partial & Full Dispatches with automated warehouse inventory reduction</p>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-md">
-          {error}
+        <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-md flex items-center gap-2">
+          <AlertCircle size={18} className="shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
@@ -218,7 +315,7 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
             </div>
 
             {/* Vehicle No */}
-            <div>
+            <div className="md:col-span-2">
               <label className="block font-medium text-gray-700 mb-1">Vehicle No</label>
               <input
                 type="text"
@@ -229,13 +326,82 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
                 className="w-full border border-gray-300 rounded-md p-2 bg-white focus:ring-1 focus:ring-blue-500 text-black"
               />
             </div>
+
+            {/* Delivery Address */}
+            <div className="md:col-span-2">
+              <label className="block font-medium text-gray-700 mb-1">Delivery / Site Address</label>
+              <input
+                type="text"
+                name="delivery_address"
+                readOnly
+                placeholder="Auto-populated from Sales Order"
+                value={formData.delivery_address}
+                className="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-gray-600 cursor-not-allowed"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Section 2: Line Items Table */}
+        {/* Section 2: Partial Dispatch Summary Status Cards */}
+        {selectedOrderSummary && (
+          <div className="bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-slate-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-3 border-b border-blue-200/60 pb-3">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-900">
+                  Partial Dispatch & Fulfillment Status for PO #{selectedOrderSummary.po_number}
+                </span>
+                <p className="text-[11px] text-gray-600">
+                  Customer: <span className="font-semibold text-gray-800">{selectedOrderSummary.customer_name}</span> | Previous Shipments: <span className="font-semibold text-gray-800">{selectedOrderSummary.previous_challans_count}</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
+                  selectedOrderSummary.is_fully_fulfilled
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : selectedOrderSummary.total_dispatched_qty > 0
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-blue-100 text-blue-800'
+                }`}>
+                  {selectedOrderSummary.is_fully_fulfilled ? <CheckCircle2 size={13} /> : <Clock size={13} />}
+                  {selectedOrderSummary.status}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+              <div className="bg-white p-2.5 rounded-md border border-gray-200">
+                <div className="text-gray-500 text-[11px]">Total BOM Required</div>
+                <div className="text-base font-bold text-gray-800">
+                  {selectedOrderSummary.total_required_qty} <span className="text-xs font-normal text-gray-500">Qty ({selectedOrderSummary.items?.length || 0} Items)</span>
+                </div>
+              </div>
+              <div className="bg-white p-2.5 rounded-md border border-gray-200">
+                <div className="text-gray-500 text-[11px]">Already Dispatched</div>
+                <div className="text-base font-bold text-indigo-600">
+                  {selectedOrderSummary.total_dispatched_qty} <span className="text-xs font-normal text-gray-500">Qty</span>
+                </div>
+              </div>
+              <div className="bg-white p-2.5 rounded-md border border-gray-200">
+                <div className="text-gray-500 text-[11px]">Remaining Balance</div>
+                <div className="text-base font-bold text-amber-600">
+                  {selectedOrderSummary.total_balance_qty} <span className="text-xs font-normal text-gray-500">Qty</span>
+                </div>
+              </div>
+              <div className="bg-white p-2.5 rounded-md border border-gray-200">
+                <div className="text-gray-500 text-[11px]">Challan Shipment #</div>
+                <div className="text-base font-bold text-emerald-600">Shipment #{selectedOrderSummary.previous_challans_count + 1}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section 3: Line Items Table */}
         <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Dispatched Items</h2>
+            <div>
+              <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Items to Dispatch in this Shipment</h2>
+              <p className="text-[11px] text-gray-500">Specify quantity to dispatch. Warehouse stock will be deducted accordingly.</p>
+            </div>
             <button
               type="button"
               onClick={addItemRow}
@@ -246,56 +412,77 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
           </div>
 
           <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse min-w-[750px]">
+            <table className="w-full text-left border-collapse min-w-[850px]">
               <thead className="bg-gray-100 text-gray-600 font-bold uppercase text-[10px] border-b border-gray-200">
                 <tr>
                   <th className="py-2.5 px-3 w-8 text-center">#</th>
-                  <th className="py-2.5 px-3 min-w-[280px]">Item / Order Product Name</th>
-                  <th className="py-2.5 px-3 w-28 text-right">Ordered Qty</th>
-                  <th className="py-2.5 px-3 w-28 text-right">Delivered Qty</th>
-                  <th className="py-2.5 px-3 w-28 text-right">Remaining Qty</th>
+                  <th className="py-2.5 px-3 min-w-[220px]">Item Name</th>
+                  <th className="py-2.5 px-3 w-24 text-right">Required Qty</th>
+                  <th className="py-2.5 px-3 w-24 text-right">Already Sent</th>
+                  <th className="py-2.5 px-3 w-24 text-right">Balance Qty</th>
+                  <th className="py-2.5 px-3 w-28 text-right">Warehouse Stock</th>
+                  <th className="py-2.5 px-3 w-32 text-right">Dispatch Qty (Now)</th>
+                  <th className="py-2.5 px-3 w-24 text-right">New Balance</th>
                   <th className="py-2.5 px-3 w-12 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 text-xs">
                 {items.map((item, idx) => {
-                  const ordered = Number(item.ordered_qty) || 0;
+                  const required = Number(item.required_qty ?? item.ordered_qty) || 0;
+                  const alreadySent = Number(item.already_dispatched_qty) || 0;
+                  const balance = Number(item.balance_qty ?? Math.max(0, required - alreadySent));
                   const delivered = Number(item.delivered_qty) || 0;
-                  const remaining = Math.max(0, ordered - delivered);
+                  const newBalance = Math.max(0, balance - delivered);
+                  const stock = Number(item.warehouse_stock ?? 0);
+                  const isStockInsufficient = delivered > stock;
 
                   return (
                     <tr key={item.id} className="hover:bg-gray-50/60">
                       <td className="py-2.5 px-3 text-center text-gray-400 font-bold">{idx + 1}</td>
 
-                      {/* Item / Product Selection Dropdown (filtered by selected Sales Order) */}
+                      {/* Item Selection Dropdown */}
                       <td className="py-2.5 px-3">
                         <select
-                          className="w-full bg-white border border-gray-300 rounded p-1.5 text-gray-800 text-xs focus:ring-1 focus:ring-blue-500"
+                          className="w-full bg-white border border-gray-300 rounded p-1.5 text-gray-800 text-xs focus:ring-1 focus:ring-blue-500 font-medium"
                           value={item.selected_order_item_key || ''}
                           onChange={(e) => {
                             const selectedKey = e.target.value;
                             if (!selectedKey) {
                               updateItemRow(item.id, 'item_name', '');
+                              updateItemRow(item.id, 'item_id', null);
                               updateItemRow(item.id, 'product_id', null);
+                              updateItemRow(item.id, 'required_qty', '');
+                              updateItemRow(item.id, 'already_dispatched_qty', '');
+                              updateItemRow(item.id, 'balance_qty', '');
                               updateItemRow(item.id, 'ordered_qty', '');
                               updateItemRow(item.id, 'delivered_qty', '');
+                              updateItemRow(item.id, 'warehouse_stock', '');
                               updateItemRow(item.id, 'selected_order_item_key', '');
                               return;
                             }
 
-                            const orderItems = selectedOrder?.items || [];
-                            const foundItem = orderItems.find(
-                              (ordItem, idxKey) => `${ordItem.itemId || ordItem.Id || idxKey}` === selectedKey
+                            const foundItem = orderItemsList.find(
+                              (ordItem, idxKey) => (ordItem.key || `${ordItem.item_id || idxKey}`) === selectedKey
                             );
 
                             if (foundItem) {
-                              const name = foundItem.itemName || foundItem.name || '';
-                              const qty = foundItem.qty || foundItem.quantity || 0;
-                              const pId = foundItem.itemId || foundItem.productId || foundItem.product_id || foundItem.Id || foundItem.id || null;
+                              const name = foundItem.item_name || 'Unnamed Item';
+                              const reqQ = foundItem.required_qty || 0;
+                              const prevDel = foundItem.already_dispatched_qty || 0;
+                              const balQ = foundItem.balance_qty || 0;
+                              const stockQ = foundItem.warehouse_stock || 0;
+                              const itemId = foundItem.item_id || null;
+                              const suggestedDel = Math.min(balQ, stockQ);
+
                               updateItemRow(item.id, 'item_name', name);
-                              updateItemRow(item.id, 'product_id', pId);
-                              updateItemRow(item.id, 'ordered_qty', qty);
-                              updateItemRow(item.id, 'delivered_qty', qty);
+                              updateItemRow(item.id, 'item_id', itemId);
+                              updateItemRow(item.id, 'product_id', itemId);
+                              updateItemRow(item.id, 'required_qty', reqQ);
+                              updateItemRow(item.id, 'already_dispatched_qty', prevDel);
+                              updateItemRow(item.id, 'balance_qty', balQ);
+                              updateItemRow(item.id, 'ordered_qty', balQ);
+                              updateItemRow(item.id, 'delivered_qty', suggestedDel);
+                              updateItemRow(item.id, 'warehouse_stock', stockQ);
                               updateItemRow(item.id, 'selected_order_item_key', selectedKey);
                             }
                           }}
@@ -303,52 +490,73 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
                           <option value="">
                             {!selectedOrderId
                               ? '-- Select Sales Order First --'
-                              : (!selectedOrder?.items || selectedOrder.items.length === 0)
-                              ? '-- No Items Found in Selected Order --'
-                              : '-- Select Item from Order --'}
+                              : orderItemsList.length === 0
+                              ? '-- No Prepared BOM Items Found --'
+                              : '-- Select Item to Dispatch --'}
                           </option>
 
-                          {(selectedOrder?.items || []).map((ordItem, idxKey) => {
-                            const itemKey = `${ordItem.itemId || ordItem.Id || idxKey}`;
-                            const name = ordItem.itemName || ordItem.name || 'Unnamed Item';
-                            const qty = ordItem.qty || ordItem.quantity || 0;
-                            const price = ordItem.price ? ` — ₹${ordItem.price}` : '';
+                          {orderItemsList.map((ordItem, idxKey) => {
+                            const itemKey = ordItem.key || `${ordItem.item_id || idxKey}`;
+                            const name = ordItem.item_name || 'Unnamed Item';
+                            const brand = ordItem.brand ? ` [${ordItem.brand}]` : '';
+                            const unit = ordItem.unit ? ` ${ordItem.unit}` : '';
+                            const balLabel = ordItem.balance_qty === 0 ? ' (Fully Dispatched)' : ` (Bal: ${ordItem.balance_qty}${unit} | Stock: ${ordItem.warehouse_stock})`;
                             return (
                               <option key={itemKey} value={itemKey}>
-                                {name} (Ordered Qty: {qty}{price})
+                                {name}{brand}{balLabel}
                               </option>
                             );
                           })}
                         </select>
                       </td>
 
-                      {/* Ordered Quantity (Auto-populated from selected order item, Read Only) */}
-                      <td className="py-2.5 px-3">
-                        <input
-                          type="number"
-                          readOnly
-                          placeholder="0"
-                          value={item.ordered_qty}
-                          className="w-full bg-gray-100 border border-gray-300 rounded p-1.5 text-right font-mono text-gray-700 cursor-not-allowed"
-                        />
+                      {/* Required Qty (Total BOM Required) */}
+                      <td className="py-2.5 px-3 text-right font-mono text-gray-700 font-medium">
+                        {required}
                       </td>
 
-                      {/* Delivered Quantity */}
+                      {/* Already Sent Qty */}
+                      <td className="py-2.5 px-3 text-right font-mono text-indigo-600 font-medium">
+                        {alreadySent}
+                      </td>
+
+                      {/* Remaining Balance Qty */}
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-600">
+                        {balance}
+                      </td>
+
+                      {/* Warehouse Stock Available */}
+                      <td className="py-2.5 px-3 text-right font-mono font-medium">
+                        <span className={`px-1.5 py-0.5 rounded text-[11px] ${
+                          stock <= 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800'
+                        }`}>
+                          {stock} in stock
+                        </span>
+                      </td>
+
+                      {/* Current Dispatch Qty Input */}
                       <td className="py-2.5 px-3">
                         <input
                           type="number"
                           min="0"
-                          max={item.ordered_qty || undefined}
+                          max={balance || undefined}
                           placeholder="0"
                           value={item.delivered_qty}
                           onChange={(e) => updateItemRow(item.id, 'delivered_qty', e.target.value)}
-                          className="w-full bg-white border border-gray-300 rounded p-1.5 text-right font-mono font-bold text-blue-600"
+                          className={`w-full bg-white border rounded p-1.5 text-right font-mono font-bold text-blue-600 focus:ring-1 ${
+                            isStockInsufficient ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-gray-300 focus:ring-blue-500'
+                          }`}
                         />
+                        {isStockInsufficient && (
+                          <div className="text-[10px] text-rose-600 font-medium mt-0.5 text-right">
+                            Exceeds Stock ({stock})
+                          </div>
+                        )}
                       </td>
 
-                      {/* Calculated Remaining Quantity */}
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-600">
-                        {remaining}
+                      {/* Calculated New Balance After This Dispatch */}
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-600">
+                        {newBalance}
                       </td>
 
                       {/* Action */}
@@ -370,7 +578,7 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
           </div>
         </div>
 
-        {/* Section 3: Submit Button */}
+        {/* Section 4: Submit Button */}
         <div className="flex justify-end gap-3">
           <button
             type="button"
@@ -392,4 +600,5 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
     </div>
   );
 };
+
 

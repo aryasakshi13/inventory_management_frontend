@@ -211,6 +211,7 @@ export const ViewPurchaseModal = ({ isOpen, onClose, purchase }) => {
                   <tr>
                     <th className="py-2.5 px-3 w-8 text-center">#</th>
                     <th className="py-2.5 px-3">Item Name</th>
+                    <th className="py-2.5 px-3">Brand</th>
                     <th className="py-2.5 px-3 text-right">Qty</th>
                     <th className="py-2.5 px-3 text-right">Rate</th>
                     <th className="py-2.5 px-3 text-right">Tax (%)</th>
@@ -224,26 +225,35 @@ export const ViewPurchaseModal = ({ isOpen, onClose, purchase }) => {
                       <tr key={item.id || idx} className="hover:bg-gray-50/50">
                         <td className="py-2.5 px-3 text-center text-gray-400 font-semibold">{idx + 1}</td>
                         <td className="py-2.5 px-3 font-medium text-gray-900">{item.item_name}</td>
-                        <td className="py-2.5 px-3 text-right font-mono text-gray-700">
-                          {parseFloat(item.qty || 0)}
+                        <td className="py-2.5 px-3 text-gray-600">
+                          {item.brand ? (
+                            <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700 font-medium text-[11px]">
+                              {item.brand}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono text-gray-700">
-                          {formatCurrency(item.rate)}
+                          {parseFloat(item.qty ?? item.quantity ?? 0)}
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono text-gray-700">
-                          {parseFloat(item.tax_percent || 0)}%
+                          {formatCurrency(item.rate ?? item.price ?? 0)}
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono text-gray-700">
-                          {formatCurrency(item.discount_amount)}
+                          {parseFloat(item.tax_percent ?? item.taxPercent ?? item.tax ?? 0)}%
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-gray-700">
+                          {formatCurrency(item.discount_amount ?? item.discount ?? 0)}
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold text-gray-900">
-                          {formatCurrency(item.line_total)}
+                          {formatCurrency(item.line_total ?? item.lineTotal ?? item.total ?? 0)}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="7" className="py-4 text-center text-gray-400">
+                      <td colSpan="8" className="py-4 text-center text-gray-400">
                         No item breakdown available.
                       </td>
                     </tr>

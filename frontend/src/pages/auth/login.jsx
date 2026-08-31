@@ -8,120 +8,120 @@ import { Label } from "@/components/ui/label";
 import { ShieldX, Lock, Mail, Loader2, LogOut } from "lucide-react";
 // import { LogOut } from "lucide-react";
 
-const Login = () =>{
+const Login = () => {
 
-const [email, setEmail] = useState('');
-const [password, setPassword] = useState('');
-const [error, setError] = useState('');
-const [loading, setLoading] = useState(false);
-const [successMessage, setSuccessMessage] = useState('');
-const [logoutLoading, setLogoutLoading] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
+    const [logoutLoading, setLogoutLoading] = useState(false);
 
-const navigate = useNavigate()
+    const navigate = useNavigate()
 
-    async function handleLogin (e){
-     e.preventDefault();
-      setError('');
-      setSuccessMessage('');3
-     setLoading(true);
+    async function handleLogin(e) {
+        e.preventDefault();
+        setError('');
+        setSuccessMessage('');
+        setLoading(true);
 
-     try{
+        try {
 
-        const baseUrl = window.location.hostname === 'localhost'
-            ? 'http://localhost:5001'
-            : 'https://www.namami-infotech.com/inventory';
-            
+            const baseUrl = window.location.hostname === 'localhost'
+                ? 'http://localhost:5001'
+                : 'https://www.namami-infotech.com/inventory';
 
+            // ================= PREVIOUS API (COMMENTED) =================
+            // const response = await fetch(`${baseUrl}/api/auth/login`, {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-type': 'application/json'
+            //     },
+            //     credentials: 'include',
+            //     body: JSON.stringify({
+            //         email: email.trim(),
+            //         password: password
+            //     })
+            // });
+            // ============================================================
 
-        // const response = await fetch('https://www.namami-infotech.com/inventory/api/auth/login',{
-         const response = await fetch(`${baseUrl}/api/auth/login`,{
-            method: 'POST',
-            headers:{
-                'Content-type': 'application/json' 
-            },
+            // 🟢 NEW EMPLOYEE AUTH API CALL (from employees table)
+            const response = await fetch(`${baseUrl}/api/employee-auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    email_id: email.trim(),
+                    email: email.trim(),
+                    employee_code: email.trim(),
+                    password: password
+                })
+            });
 
-            credentials: 'include',
-            body: JSON.stringify({
-                email:email.trim(),
-                password: password
-            })
-        });
+            const data = await response.json();
 
-        const data = await response.json();
+            console.log("Response data from Backend Employee Login API:", data);
+            if (data.success && data.user) {
 
-        console.log("Response data from Backend Login API:", data);
-        if(data.success && data.user){
+                localStorage.setItem('user', JSON.stringify(data.user));
 
+                console.log("Token received inside data:", data.token);
 
-            localStorage.setItem('user', JSON.stringify(data.user));
-    
-        // 🌟 YEH LOG ADD KAREIN: Dekhein ki token data ke andar aa bhi raha hai ya nahi
-      console.log("Token received inside data:", data.token);
+                if (data.token) {
+                    localStorage.setItem('authToken', data.token);
+                }
 
-            // const extractedRole = data.role || data.Role || data.user?.role || data.user?.Role || 'employee';
+                setSuccessMessage(`LoggedIn Successfully. Welcome ${data.user.employee_name || data.user.name || ''}!`);
+                setLoading(false);
 
-            // const userSession = {
-            //     email: email.trim(),
-            //     // role: data.role || (data.user && data.user.role) || 'admin'
-            //     role: extractedRole.toLowerCase(),
-            //     officeId: data.user?.officeId || null 
-            // };
-            localStorage.setItem('user', JSON.stringify(data.user));
+                // Redirect directly to Main Module page
+                setTimeout(() => {
+                    navigate('/pages/mainModule', { replace: true });
+                }, 800);
 
-            console.log("Token in storage right after saving:", localStorage.getItem('authToken'));
-            
-           if (data.token) {
-                localStorage.setItem('authToken', data.token); // 🌟 Crucial to bypass 401 errors
+            } else {
+                setError(data.message || "Invalid credentials.");
             }
-
-            setSuccessMessage('LoggedIn Successfully..');
-            setLoading(false);
-            
-            // const targetRoute = data.redirecteTo || '/employee/dashboard';
-
-            // setTimeout(() => {
-            //     navigate('/admin/dashboard');
-            //     }, 1500);
-
-            const role = data.user?.role?.toLowerCase();
-
-            let targetRoute = "/admin/dashboard";
-
-            if (role === "sales" || role === "store manager") {
-                targetRoute = "/pages/mainModule";
-            }
-
-            setTimeout(() => {
-                navigate(targetRoute, { replace: true });
-            }, 1500);
-                
-        }else{
-            setError(data.message);
+        } catch (err) {
+            console.error("Login Error:", err);
+            setError("Connection failed. Please check your network or server status.");
         }
-     }catch(err){
-        setError("Connection failed...")
-     }
-     finally{
-        setLoading(false);
-     }
-}
+        finally {
+            setLoading(false);
+        }
+    }
 
-async function handleLogout() {
+    async function handleLogout() {
         setError('');
         setSuccessMessage('');
         setLogoutLoading(true);
 
         try {
-            const response = await fetch('https://www.namami-infotech.com/inventory/api/auth/logout', {
+            const baseUrl = window.location.hostname === 'localhost'
+                ? 'http://localhost:5001'
+                : 'https://www.namami-infotech.com/inventory';
+
+            // ================= PREVIOUS LOGOUT (COMMENTED) =================
+            // const response = await fetch('https://www.namami-infotech.com/inventory/api/auth/logout', {
+            //     method: 'POST',
+            //     credentials: 'include'
+            // });
+            // ==============================================================
+
+            // 🟢 NEW EMPLOYEE LOGOUT
+            const response = await fetch(`${baseUrl}/api/employee-auth/logout`, {
                 method: 'POST',
-                credentials: 'include' // Sends the secure cookie to the server to be explicitly destroyed
+                credentials: 'include'
             });
 
             const data = await response.json();
 
             if (data.success) {
                 localStorage.removeItem('user');
-                setSuccessMessage('👋 Admin session cleared. Storage logs closed.');
+                localStorage.removeItem('authToken');
+                setSuccessMessage('👋 Session cleared. Logged out successfully.');
                 setEmail('');
                 setPassword('');
             } else {
@@ -135,11 +135,11 @@ async function handleLogout() {
     }
 
 
- return(
-   <div className="flex flex-col justify-center min-h-screen items-center bg-white px-4 antialiased relative overflow-hidden gap-4">
+    return (
+        <div className="flex flex-col justify-center min-h-screen items-center bg-white px-4 antialiased relative overflow-hidden gap-4">
 
-             {/* Logout button */}
-           {/* <div className="absolute top-4 right-4 z-20">
+            {/* Logout button */}
+            {/* <div className="absolute top-4 right-4 z-20">
                 <Button 
                     onClick={handleLogout}
                     disabled={logoutLoading}
@@ -155,7 +155,7 @@ async function handleLogout() {
 
             {/* Ambient High-End Glowing Backdrop (Aceternity UI Style) */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[130px] pointer-events-none" />
-               
+
             {/* Main Admin Card Context Wrapper */}
             <Card className="w-full max-w-md bg-white border-gray-200  shadow-xl rounded 2xl backdrop-blur-md relative z-10 py-2">
                 <CardHeader className="space-y-2 text-center pt-8">
@@ -165,11 +165,11 @@ async function handleLogout() {
                     <CardTitle className="text-2xl font-bold text-gray-900">
                         IMS Admin Gateway
                     </CardTitle>
-                    
+
                 </CardHeader>
 
                 <CardContent className="px-8 pb-6 space-y-5">
-                    
+
                     {successMessage && (
                         <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3 rounded-lg mb-5 text-xs font-medium text-center animate-bounce" role="alert">
                             {successMessage}
@@ -188,7 +188,7 @@ async function handleLogout() {
                             <Label htmlFor="email" className="text-gray-700 text-xs font-semibold tracking-wide block ml-1">Admin Email</Label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <Input 
+                                <Input
                                     id="email"
                                     type="email"
                                     value={email}
@@ -211,7 +211,7 @@ async function handleLogout() {
                             </div>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <Input 
+                                <Input
                                     id="password"
                                     type="password"
                                     value={password}
@@ -227,8 +227,8 @@ async function handleLogout() {
                                 Forgot password?
                             </Link>
                         </div>
-                        <Button 
-                            type="submit" 
+                        <Button
+                            type="submit"
                             disabled={loading}
                             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-all shadow-lg shadow-blue-600/10 active:scale-[0.99] disabled:opacity-50 mt-2"
                         >
@@ -243,7 +243,7 @@ async function handleLogout() {
             </Card>
 
         </div>
- )
+    )
 
 }
 export default Login;

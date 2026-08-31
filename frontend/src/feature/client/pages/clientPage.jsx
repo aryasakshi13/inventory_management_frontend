@@ -23,8 +23,9 @@ export const ClientListPage = () => {
     clients,
     searchQuery,
     setSearchQuery,
-    statusFilter,
-    setStatusFilter,
+    inlineFilters,
+    setInlineFilter,
+    clearInlineFilters,
     selectedClient,
     isDrawerOpen,
     isModalOpen,
@@ -37,35 +38,25 @@ export const ClientListPage = () => {
     handleSaveClient,
   } = useClients();
 
-  
- useEffect(() => {
+  useEffect(() => {
+    if(location.state?.fromDrawer && location.state.clientId){
+      const client = clients.find(
+        c => c.id === location.state.clientId
+      );
 
-if(location.state?.fromDrawer && location.state.clientId){
+      if(client){
+        handleOpenDrawer(client);
+      }
+    }
+  }, [location, clients]);
 
- const client = clients.find(
-   c => c.id === location.state.clientId
- );
-
- if(client){
-   handleOpenDrawer(client);
- }
-
-}
-
-},[
- location,
- clients
-]);
-
-useEffect(() => {
+  useEffect(() => {
     setCurrentPage(1);
-}, [searchQuery, statusFilter]);
+  }, [searchQuery, inlineFilters]);
 
-
-
-const handleNavigateToDetail = (clientId) => {
+  const handleNavigateToDetail = (clientId) => {
     navigate(`/pages/mainModule/clients/${clientId}`);
-};
+  };
 
   const totalItems = clients.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
@@ -74,49 +65,64 @@ const handleNavigateToDetail = (clientId) => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedClients = clients.slice(startIndex, startIndex + itemsPerPage);
 
+  const hasAnyFilter = Boolean(
+    searchQuery ||
+    inlineFilters?.companyName ||
+    inlineFilters?.role ||
+    inlineFilters?.gstIn ||
+    inlineFilters?.contactPerson ||
+    inlineFilters?.status
+  );
+
+  const handleClearAllFilters = () => {
+    setSearchQuery('');
+    clearInlineFilters();
+  };
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
-          <p className="text-sm text-gray-500">Manage client profiles, GST information, and sales history.</p>
+          <h1 className="text-2xl font-bold text-gray-900">Clients & Vendors</h1>
+          <p className="text-sm text-gray-500">Manage client and vendor business profiles, GSTIN, and contact details.</p>
         </div>
         <button
           onClick={handleOpenCreateModal}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm transition"
         >
-          + Add Client
+          + Add Client / Vendor
         </button>
       </div>
 
-      {/* Filter Bar */}
+      {/* Global Filter Bar: Company Name only with Clear All option */}
       <ClientFilters
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
+        hasActiveFilters={hasAnyFilter}
+        onClearAll={handleClearAllFilters}
       />
 
-
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm h-[650px] flex flex-col overflow-hidden">
-      {/* Main Table */}
-      <div className="flex-1 min-h-0 ">
-      <ClientTable
-        clients={paginatedClients}
-        onRowClick={handleOpenDrawer}
-        onEditClick={handleOpenEditModal}
-      >
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          onPageChange={(newPage) => setCurrentPage(newPage)}
-        />
-      </ClientTable>
-      </div>
-
+        {/* Main Table with Inline Header Filters */}
+        <div className="flex-1 min-h-0 ">
+          <ClientTable
+            clients={paginatedClients}
+            inlineFilters={inlineFilters}
+            setInlineFilter={setInlineFilter}
+            clearInlineFilters={clearInlineFilters}
+            onRowClick={handleOpenDrawer}
+            onEditClick={handleOpenEditModal}
+          >
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={(newPage) => setCurrentPage(newPage)}
+            />
+          </ClientTable>
+        </div>
       </div>
 
       {/* Slide-over Side Drawer */}

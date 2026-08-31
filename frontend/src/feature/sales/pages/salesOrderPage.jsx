@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSalesOrder } from '../hooks/useSalesOrder';
 import { SalesOrderFilter } from '../component/salesOrderFilter';
 import { SalesOrderTable } from '../component/salesOrderTable';
@@ -6,6 +6,7 @@ import { getClients } from "../../client/services/clientService";
 import { createSalesOrder } from '../../client/services/salesOrderService';
 import { Pagination } from '../../../components/common/pagination';
 import { ViewSalesOrderItemsModal } from '../../client/componenets/ViewSalesOrderItemsModal';
+import { exportSalesOrdersReport } from '../../../utils/exportReport';
 
 // REUSING YOUR MODAL FROM CLIENT SECTION HERE:
 import { AddSalesOrderModal } from '../../client/componenets/AddSalesOrderModal';
@@ -16,9 +17,16 @@ export const SalesOrderPage = () => {
     loading,
     searchQuery,
     setSearchQuery,
+    inlineFilters,
+    setInlineFilter,
+    clearInlineFilters,
     resetFilters,
     addOrder,
+    updateOrderStatus,
   } = useSalesOrder();
+
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userRole = user.role || user.Role || '';
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -28,31 +36,27 @@ export const SalesOrderPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-
   const [clients, setClients] = useState([]);
 
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const response = await getClients({ role: 'client', limit: 100 });
+        const list = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
+        const clientsOnly = list.filter(c => (c?.role ?? '').toString().trim().toLowerCase() === 'client');
+        setClients(clientsOnly);
+      } catch (err) {
+        console.error('Error fetching clients for sales order:', err);
+      }
+    };
 
+    fetchClients();
+  }, []);
 
-useEffect(() => {
-  const fetchClients = async () => {
-    try {
-      const response = await getClients();
-
-      console.log("Clients API Response:", response);
-
-      setClients(response?.data ?? response);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  fetchClients();
-}, []);
-
-// Reset to first page when the orders or search query change
-useEffect(() => {
-  setCurrentPage(1);
-}, [searchQuery, orders.length]);
+  // Reset to first page when orders, search query, or inline filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, inlineFilters, orders.length]);
 
   const handleSelectOrder = (order) => {
     setSelectedOrder(order);
@@ -76,6 +80,16 @@ useEffect(() => {
     }
   };
 
+  const hasAnyFilter = Boolean(
+    searchQuery ||
+    inlineFilters?.orderId ||
+    inlineFilters?.clientName ||
+    inlineFilters?.projectIncharge ||
+    inlineFilters?.poDate ||
+    inlineFilters?.poNo ||
+    inlineFilters?.status
+  );
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       
@@ -87,12 +101,14 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Filter Component */}
+      {/* Filter Component (Global Client Search + Clear All) */}
       <SalesOrderFilter
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        resetFilters={resetFilters}
+        hasActiveFilters={hasAnyFilter}
+        onClearAll={resetFilters}
         onOpenCreateModal={() => setIsCreateModalOpen(true)}
+        onDownloadReport={() => exportSalesOrdersReport(orders)}
       />
 
       {/* Table Component */}
@@ -102,8 +118,13 @@ useEffect(() => {
         <>
           <SalesOrderTable
             orders={orders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
+            inlineFilters={inlineFilters}
+            setInlineFilter={setInlineFilter}
+            clearInlineFilters={clearInlineFilters}
             onSelectOrder={handleSelectOrder}
             onQuickView={handleSelectOrder}
+            onStatusChange={updateOrderStatus}
+            userRole={userRole}
           >
             <Pagination
               currentPage={currentPage}

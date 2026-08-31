@@ -11,8 +11,19 @@ export const ClientQuickDrawer = ({ isOpen, client, onClose, onViewFullProfile }
         <div>
           <div className="flex justify-between items-center border-b pb-4 mb-6">
             <div>
-              <h3 className="font-bold text-lg text-gray-900">{client.companyName}</h3>
-              <p className="text-xs text-gray-400 font-mono">ID: {client.id}</p>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-lg text-gray-900">{client.companyName}</h3>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                    client.role === 'vendor'
+                      ? 'bg-purple-100 text-purple-800 border-purple-200'
+                      : 'bg-blue-100 text-blue-800 border-blue-200'
+                  }`}
+                >
+                  {client.role === 'vendor' ? 'Vendor' : 'Client'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 font-mono mt-0.5">ID: #{client.id}</p>
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg p-1">✕</button>
           </div>

@@ -6,46 +6,91 @@ import { getClients, createClient,updateClient, getClientById } from "../service
 export function useClients() {
   const [clients, setClients] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
   const [selectedClient, setSelectedClient] = useState(null);
+
+  // Inline table filters
+  const [inlineFilters, setInlineFilters] = useState({
+    companyName: '',
+    role: '',
+    gstIn: '',
+    contactPerson: '',
+    status: '',
+  });
   
   // Drawer & Modal states
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
 
-
-  
-useEffect(() => {
+  useEffect(() => {
     fetchClients();
- }, []);
+  }, []);
 
-const fetchClients = async () => {
+  const fetchClients = async () => {
     try {
-        const response = await getClients();
+      const response = await getClients();
 
-        if (response.success) {
-            setClients(response.data);
-        }
+      if (response.success) {
+        setClients(response.data);
+      }
     } catch (err) {
-        console.error(err);
+      console.error(err);
     }
-};
+  };
 
-  
+  const handleInlineFilterChange = (field, value) => {
+    setInlineFilters((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleClearInlineFilters = () => {
+    setInlineFilters({
+      companyName: '',
+      role: '',
+      gstIn: '',
+      contactPerson: '',
+      status: '',
+    });
+  };
+
   const filteredClients = useMemo(() => {
     return clients.filter((client) => {
-      console.log("client data is here ",clients);
-      const matchesSearch =
-        client.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        client.contactPerson?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        client.gstIn?.toLowerCase().includes(searchQuery.toLowerCase());
+      // Global search: strictly by Company Name as requested
+      const matchesGlobalSearch = searchQuery
+        ? client.companyName?.toLowerCase().includes(searchQuery.toLowerCase().trim())
+        : true;
 
-      const matchesStatus = statusFilter ? client.status === statusFilter : true;
+      // Inline Header Filters
+      const matchesInlineCompany = inlineFilters.companyName
+        ? client.companyName?.toLowerCase().includes(inlineFilters.companyName.toLowerCase().trim())
+        : true;
 
-      return matchesSearch && matchesStatus;
+      const clientRole = (client.role || '').toLowerCase();
+      const matchesInlineRole = inlineFilters.role
+        ? clientRole === inlineFilters.role.toLowerCase().trim()
+        : true;
+
+      const matchesInlineGst = inlineFilters.gstIn
+        ? client.gstIn?.toLowerCase().includes(inlineFilters.gstIn.toLowerCase().trim())
+        : true;
+
+      const matchesInlineContact = inlineFilters.contactPerson
+        ? client.contactPerson?.toLowerCase().includes(inlineFilters.contactPerson.toLowerCase().trim())
+        : true;
+
+      const matchesInlineStatus = inlineFilters.status
+        ? client.status === inlineFilters.status
+        : true;
+
+      return (
+        matchesGlobalSearch &&
+        matchesInlineCompany &&
+        matchesInlineRole &&
+        matchesInlineGst &&
+        matchesInlineContact &&
+        matchesInlineStatus
+      );
     });
-  }, [clients, searchQuery, statusFilter]);
+  }, [clients, searchQuery, inlineFilters]);
 
 
 
@@ -127,8 +172,9 @@ const fetchClients = async () => {
     totalCount: clients.length,
     searchQuery,
     setSearchQuery,
-    statusFilter,
-    setStatusFilter,
+    inlineFilters,
+    setInlineFilter: handleInlineFilterChange,
+    clearInlineFilters: handleClearInlineFilters,
     selectedClient,
     isDrawerOpen,
     isModalOpen,

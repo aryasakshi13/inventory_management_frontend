@@ -83,9 +83,19 @@ export const useDeliveryForm = (onSubmitSuccess) => {
     setError(null);
   };
 
+  const populateItems = (newItems) => {
+    if (Array.isArray(newItems) && newItems.length > 0) {
+      setItems(newItems);
+    } else {
+      setItems([createEmptyRow()]);
+    }
+  };
+
   return {
     formData,
     items,
+    setItems,
+    populateItems,
     loading,
     error,
     setError,

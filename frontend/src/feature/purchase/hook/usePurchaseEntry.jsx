@@ -3,11 +3,14 @@ import { useState, useMemo } from 'react';
 
 const createEmptyItem = () => ({
   id: Date.now() + Math.random(),
+  item_id: null,
+  product_id: null,
   itemName: '',
-  quantity: 1,
-  rate: 0,
-  taxPercent: 0,
-  discount: 0,
+  brand: '',
+  quantity: '1',
+  rate: '',
+  taxPercent: '',
+  discount: '',
 });
 
 export const usePurchaseEntry = () => {
@@ -22,7 +25,6 @@ export const usePurchaseEntry = () => {
     invoice_file: null,
     remarks: '',
   });
-
 
   const [items, setItems] = useState([createEmptyItem()]);
 
@@ -43,11 +45,22 @@ export const usePurchaseEntry = () => {
 
   const updateItemRow = (id, field, value) => {
     setItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, [field]: field === 'itemName' ? value : Number(value) || 0 }
-          : item
-      )
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        if (field === 'item' && value && typeof value === 'object') {
+          return {
+            ...item,
+            item_id: value.id || null,
+            itemId: value.id || null,
+            product_id: value.id || null,
+            itemName: value.item_name || value.name || '',
+          };
+        }
+        return {
+          ...item,
+          [field]: value,
+        };
+      })
     );
   };
 
@@ -58,10 +71,15 @@ export const usePurchaseEntry = () => {
     let totalDiscount = 0;
 
     const itemsWithTotals = items.map((item) => {
-      const baseAmount = item.quantity * item.rate;
-      const discountAmount = item.discount;
+      const q = Number(item.quantity) || 0;
+      const r = Number(item.rate) || 0;
+      const d = Number(item.discount) || 0;
+      const t = Number(item.taxPercent) || 0;
+
+      const baseAmount = q * r;
+      const discountAmount = d;
       const taxableAmount = Math.max(0, baseAmount - discountAmount);
-      const taxAmount = (taxableAmount * item.taxPercent) / 100;
+      const taxAmount = (taxableAmount * t) / 100;
       const lineTotal = taxableAmount + taxAmount;
 
       subtotal += baseAmount;
