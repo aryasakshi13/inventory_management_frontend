@@ -74,7 +74,7 @@ export const StoreItemsTable = ({ items, onEdit, onDelete, onView, loading }) =>
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-2xs text-xs">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse min-w-[850px]">
           <thead className="bg-gray-50 border-b border-gray-200 uppercase text-[10px] font-bold text-gray-500 tracking-wider">
             <tr>
               <th className="py-3 px-4 w-12 text-center">#</th>

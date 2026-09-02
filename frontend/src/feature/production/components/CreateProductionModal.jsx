@@ -54,12 +54,16 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
       const initData = async () => {
         setLoadingInitial(true);
         try {
+          const apiHost = window.location.hostname === 'localhost'
+            ? 'http://localhost:5001'
+            : 'https://www.namami-infotech.com/inventory';
+
           // 1. Get next task ID
           const nextRes = await getNextTaskId();
           if (nextRes?.task_id) setTaskId(nextRes.task_id);
 
           // 2. Fetch Products
-          const prodRes = await axios.get('http://localhost:5001/api/products').catch(() => ({ data: [] }));
+          const prodRes = await axios.get(`${apiHost}/api/products`, { withCredentials: true }).catch(() => ({ data: [] }));
           const pData = Array.isArray(prodRes?.data)
             ? prodRes.data
             : Array.isArray(prodRes?.data?.data)
@@ -68,7 +72,7 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
           setProductsList(pData);
 
           // 3. Fetch Store Items
-          const storeRes = await axios.get('http://localhost:5001/api/store-items').catch(() => ({ data: [] }));
+          const storeRes = await axios.get(`${apiHost}/api/store-items`, { withCredentials: true }).catch(() => ({ data: [] }));
           const sData = Array.isArray(storeRes?.data)
             ? storeRes.data
             : Array.isArray(storeRes?.data?.data)
@@ -77,7 +81,7 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
           setStoreItemsList(sData);
 
           // 4. Fetch BOMs
-          const bomRes = await axios.get('http://localhost:5001/api/bom').catch(() => ({ data: [] }));
+          const bomRes = await axios.get(`${apiHost}/api/bom`, { withCredentials: true }).catch(() => ({ data: [] }));
           const bData = Array.isArray(bomRes?.data)
             ? bomRes.data
             : Array.isArray(bomRes?.data?.data)
@@ -86,7 +90,7 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
           setBomList(bData);
 
           // 5. Fetch Employees for Project Incharge
-          const empRes = await axios.get('http://localhost:5001/api/employees', { withCredentials: true }).catch(() => ({ data: [] }));
+          const empRes = await axios.get(`${apiHost}/api/employees`, { withCredentials: true }).catch(() => ({ data: [] }));
           const eData = Array.isArray(empRes?.data)
             ? empRes.data
             : Array.isArray(empRes?.data?.data)

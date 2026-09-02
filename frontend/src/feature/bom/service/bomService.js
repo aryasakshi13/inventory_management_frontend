@@ -1,16 +1,28 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:5001/api/bom";
+const isLocal = window.location.hostname === 'localhost';
+
+const BASE_URL = isLocal
+    ? "http://localhost:5001/api/bom"
+    : "https://www.namami-infotech.com/inventory/api/bom";
+
+const PRODUCTS_URL = isLocal
+    ? "http://localhost:5001/api/products"
+    : "https://www.namami-infotech.com/inventory/api/products";
+
+const ITEMS_URL = isLocal
+    ? "http://localhost:5001/api/itemNew"
+    : "https://www.namami-infotech.com/inventory/api/itemNew";
 
 // Get all BOMs
 export const getBOMs = async () => {
-    const response = await axios.get(BASE_URL);
+    const response = await axios.get(BASE_URL, { withCredentials: true });
     return response.data;
 };
 
 // Get single BOM
 export const getBOMById = async (id) => {
-    const response = await axios.get(`${BASE_URL}/${id}`);
+    const response = await axios.get(`${BASE_URL}/${id}`, { withCredentials: true });
     return response.data;
 };
 
@@ -18,7 +30,9 @@ export const getBOMById = async (id) => {
 export const createBOM = async (payload) => {
     const response = await axios.post(
         `${BASE_URL}/add`,
-         payload);
+        payload,
+        { withCredentials: true }
+    );
     return response.data;
 };
 
@@ -26,45 +40,39 @@ export const createBOM = async (payload) => {
 export const updateBOM = async (id, payload) => {
     const response = await axios.put(
         `${BASE_URL}/${id}`,
-        payload
+        payload,
+        { withCredentials: true }
     );
-
     return response.data;
 };
 
 // Delete BOM
 export const deleteBOM = async (id) => {
     const response = await axios.delete(
-        `${BASE_URL}/${id}`
+        `${BASE_URL}/${id}`,
+        { withCredentials: true }
     );
-
     return response.data;
 };
 
 // Get products
 export const getProducts = async () => {
-    const response = await axios.get(
-        "http://localhost:5001/api/products"
-    );
-
+    const response = await axios.get(PRODUCTS_URL, { withCredentials: true });
     return response.data;
 };
 
 // Create product
 export const createProduct = async (payload) => {
     const response = await axios.post(
-        "http://localhost:5001/api/products/add",
-        payload
+        `${PRODUCTS_URL}/add`,
+        payload,
+        { withCredentials: true }
     );
-
     return response.data;
 };
 
 // Get items
 export const getItems = async () => {
-    const response = await axios.get(
-        "http://localhost:5001/api/itemNew"
-    );
-
+    const response = await axios.get(ITEMS_URL, { withCredentials: true });
     return response.data;
 };

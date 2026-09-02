@@ -1,7 +1,7 @@
 import React from 'react';
-import { Edit3, Trash2, ShieldCheck, Mail, Phone, MapPin } from 'lucide-react';
+import { Edit3, ShieldCheck, Mail, Phone, MapPin } from 'lucide-react';
 
-export const EmployeeTable = ({ employees, loading, onEdit, onDelete }) => {
+export const EmployeeTable = ({ employees, loading, onEdit }) => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
       {loading ? (
@@ -77,13 +77,6 @@ export const EmployeeTable = ({ employees, loading, onEdit, onDelete }) => {
                         title="Edit Employee"
                       >
                         <Edit3 size={15} />
-                      </button>
-                      <button
-                        onClick={() => onDelete(emp.id)}
-                        className="p-1.5 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded transition"
-                        title="Delete Employee"
-                      >
-                        <Trash2 size={15} />
                       </button>
                     </div>
                   </td>

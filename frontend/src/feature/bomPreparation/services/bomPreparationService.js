@@ -1,7 +1,9 @@
 import axios from "axios";
 import { fetchSalesOrders } from "../../client/services/salesOrderService";
 
-const BASE_URL = "http://localhost:5001/api/bomPrepare";
+const BASE_URL = window.location.hostname === 'localhost'
+    ? "http://localhost:5001/api/bomPrepare"
+    : "https://www.namami-infotech.com/inventory/api/bomPrepare";
 
 /**
  * Get confirmed sales orders

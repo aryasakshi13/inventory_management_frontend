@@ -93,21 +93,21 @@ export const PurchaseListPage = ({ onOpenCreate }) => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Title & Action Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Purchase Bills</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Purchase Bills</h1>
           <p className="text-xs text-gray-500">View and manage all incoming purchase invoices</p>
         </div>
         <button
           onClick={onOpenCreate}
-          className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition"
+          className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition cursor-pointer"
         >
           <Plus size={15} /> New Purchase Entry
         </button>
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+      <div className="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-xs grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
         <div>
           <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Search</label>
           <input
@@ -142,7 +142,7 @@ export const PurchaseListPage = ({ onOpenCreate }) => {
         <div className="flex items-end">
           <button
             onClick={() => { setSearchQuery(''); setStartDate(''); setEndDate(''); }}
-            className="w-full px-3 py-2 bg-gray-100 border  border-gray-300 rounded-lg text-xs text-gray-700 hover:bg-gray-200"
+            className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-xs text-gray-700 hover:bg-gray-200 cursor-pointer"
           >
             Clear Filters
           </button>
@@ -151,13 +151,14 @@ export const PurchaseListPage = ({ onOpenCreate }) => {
 
       {/* Data Table */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-xs text-xs">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-50 border-b border-gray-200 uppercase text-[10px] font-bold text-gray-500 tracking-wider">
-            <tr>
-              <th className="py-3 px-4">Bill No</th>
-              <th className="py-3 px-4">Vendor Name</th>
-              <th className="py-3 px-4">Invoice No</th>
-              <th className="py-3 px-4">Invoice Date</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[700px]">
+            <thead className="bg-gray-50 border-b border-gray-200 uppercase text-[10px] font-bold text-gray-500 tracking-wider">
+              <tr>
+                <th className="py-3 px-4">Bill No</th>
+                <th className="py-3 px-4">Vendor Name</th>
+                <th className="py-3 px-4">Invoice No</th>
+                <th className="py-3 px-4">Invoice Date</th>
               <th className="py-3 px-4 text-right">Total Amount</th>
               <th className="py-3 px-4">Created At</th>
               <th className="py-3 px-4 text-center">Actions</th>
@@ -207,6 +208,7 @@ export const PurchaseListPage = ({ onOpenCreate }) => {
             ))}
           </tbody>
         </table>
+        </div>
 
         <Pagination
           currentPage={pagination.currentPage}

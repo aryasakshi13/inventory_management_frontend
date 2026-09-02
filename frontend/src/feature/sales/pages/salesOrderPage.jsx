@@ -91,12 +91,12 @@ export const SalesOrderPage = () => {
   );
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Sales Orders</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Sales Orders</h1>
           <p className="text-xs text-gray-500">Manage, track, and process customer sales orders</p>
         </div>
       </div>

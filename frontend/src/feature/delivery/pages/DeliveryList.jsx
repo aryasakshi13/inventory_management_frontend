@@ -163,10 +163,10 @@ export const DeliveryList = ({ onAddNew }) => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
             <Truck size={22} className="text-blue-600" />
             Delivery Challans
           </h1>
@@ -175,7 +175,7 @@ export const DeliveryList = ({ onAddNew }) => {
 
         <button
           onClick={onAddNew}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-md shadow-sm transition"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition cursor-pointer"
         >
           <Plus size={16} /> New Delivery
         </button>
@@ -285,7 +285,7 @@ export const DeliveryList = ({ onAddNew }) => {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full text-left border-collapse text-xs min-w-[850px]">
                 <thead className="bg-gray-100 text-gray-600 font-bold uppercase text-[10px] border-b border-gray-200">
                   <tr>
                     <th className="py-3 px-4">Challan No</th>

@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const UPLOAD_API_URL = 'http://localhost:5001/api/upload';
+const UPLOAD_API_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:5001/api/upload'
+  : 'https://www.namami-infotech.com/inventory/api/upload';
 
 /**
  * Upload an image or document file into a specific folder and return the generated image URL

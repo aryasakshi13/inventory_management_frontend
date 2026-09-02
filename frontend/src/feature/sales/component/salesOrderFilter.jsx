@@ -10,9 +10,9 @@ export const SalesOrderFilter = ({
   onDownloadReport,
 }) => {
   return (
-    <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-xs flex flex-wrap gap-3 justify-between items-center text-xs">
+    <div className="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-xs flex flex-col sm:flex-row gap-3 sm:items-center justify-between text-xs">
       {/* Global Search Bar (Search by Client Name Only) */}
-      <div className="flex-1 min-w-[280px] max-w-md relative">
+      <div className="w-full sm:w-auto flex-1 sm:max-w-md relative">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           type="text"
@@ -32,14 +32,14 @@ export const SalesOrderFilter = ({
         )}
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
         {hasActiveFilters && (
           <button
             type="button"
             onClick={onClearAll}
-            className="px-3.5 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded-lg text-xs font-semibold transition shrink-0"
+            className="flex-1 sm:flex-initial px-3 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded-lg text-xs font-semibold transition text-center shrink-0 cursor-pointer"
           >
-            Clear All Filters
+            Clear All
           </button>
         )}
 
@@ -47,19 +47,21 @@ export const SalesOrderFilter = ({
           type="button"
           onClick={onDownloadReport}
           title="Download Sales Orders Report (Excel)"
-          className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs transition shadow-xs"
+          className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs transition shadow-xs cursor-pointer"
         >
-          <Download size={15} /> Download Report
+          <Download size={14} />
+          <span>Report</span>
         </button>
 
         <button
           type="button"
           onClick={onOpenCreateModal}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs transition shadow-xs"
+          className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs transition shadow-xs cursor-pointer whitespace-nowrap"
         >
-          <Plus size={15} /> Create Sales Order
+          <Plus size={14} />
+          <span>Create SO</span>
         </button>
       </div>
     </div>
   );
-};
+};

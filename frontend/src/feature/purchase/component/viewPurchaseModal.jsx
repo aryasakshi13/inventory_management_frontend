@@ -11,11 +11,14 @@ export const ViewPurchaseModal = ({ isOpen, onClose, purchase }) => {
   const getFullImageUrl = (path) => {
     if (!path || typeof path !== 'string') return '';
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    const base = window.location.hostname === 'localhost'
+      ? 'http://localhost:5001'
+      : 'https://www.namami-infotech.com/inventory';
     if (path.startsWith('/uploads') || path.startsWith('uploads')) {
       const cleanPath = path.startsWith('/') ? path : `/${path}`;
-      return `http://localhost:5001${cleanPath}`;
+      return `${base}${cleanPath}`;
     }
-    return `http://localhost:5001/uploads/${path}`;
+    return `${base}/uploads/${path}`;
   };
 
   const rawInvoiceCopy = purchase.invoice_copy || purchase.invoice_url || purchase.invoiceCopy || purchase.invoice_file || purchase.poCopy;

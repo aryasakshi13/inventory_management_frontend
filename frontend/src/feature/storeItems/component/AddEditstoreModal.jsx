@@ -64,7 +64,10 @@ export const AddEditStoreModal = ({ isOpen, onClose, onSave, editingItem, isSubm
       const fetchProducts = async () => {
         try {
           setLoadingProducts(true);
-          const res = await axios.get('http://localhost:5001/api/products');
+          const prodUrl = window.location.hostname === 'localhost'
+            ? 'http://localhost:5001/api/products'
+            : 'https://www.namami-infotech.com/inventory/api/products';
+          const res = await axios.get(prodUrl, { withCredentials: true });
           const pList = Array.isArray(res?.data)
             ? res.data
             : Array.isArray(res?.data?.data)

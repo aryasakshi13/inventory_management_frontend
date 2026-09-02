@@ -1,14 +1,14 @@
 import React from 'react';
-import { Eye, Edit3, Trash2, ShieldCheck, Mail, Phone } from 'lucide-react';
+import { Eye, Edit3, ShieldCheck, Mail, Phone } from 'lucide-react';
 
 export const EmployeeTable = ({ 
   employees, 
   loading, 
   onEdit, 
-  onDelete, 
   onView,
   onToggleStatus,
-  statusUpdatingId
+  statusUpdatingId,
+  children
 }) => {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden text-xs">
@@ -18,7 +18,7 @@ export const EmployeeTable = ({
         <div className="p-8 text-center text-xs text-gray-500">No employee records found matching filter.</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead className="bg-slate-50 text-gray-600 font-bold uppercase text-[10px] border-b border-gray-200">
               <tr>
                 <th className="py-3.5 px-4">Emp Code</th>
@@ -99,19 +99,13 @@ export const EmployeeTable = ({
                           <Eye size={15} />
                         </button>
                         
+                        {/* EDIT BUTTON */}
                         <button
                           onClick={() => onEdit(emp)}
                           className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
                           title="Edit Employee"
                         >
                           <Edit3 size={15} />
-                        </button>
-                        <button
-                          onClick={() => onDelete(emp.id)}
-                          className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                          title="Delete Employee"
-                        >
-                          <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
@@ -120,6 +114,11 @@ export const EmployeeTable = ({
               })}
             </tbody>
           </table>
+        </div>
+      )}
+      {children && !loading && employees.length > 0 && (
+        <div className="border-t border-gray-200 bg-white">
+          {children}
         </div>
       )}
     </div>

@@ -190,11 +190,11 @@ export const MaterialReceiptPage = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6 bg-gray-50 min-h-screen">
+    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
             <ClipboardCheck size={24} className="text-blue-600" />
             Material Receipts & Site Inward Acceptance
           </h1>
@@ -338,7 +338,7 @@ export const MaterialReceiptPage = () => {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full text-left border-collapse text-xs min-w-[850px]">
                 <thead className="bg-gray-100 text-gray-600 font-bold uppercase text-[10px] border-b border-gray-200">
                   <tr>
                     <th className="py-3 px-4">Challan No</th>

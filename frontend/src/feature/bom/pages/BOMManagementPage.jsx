@@ -256,7 +256,7 @@ const BOMManagementPage = () => {
 
         return (
 
-            <div className="p-6">
+            <div className="space-y-4">
 
                 <BOMForm
                     bom={selectedBOM}
@@ -281,16 +281,16 @@ const BOMManagementPage = () => {
 
     return (
 
-        <div className="p-6">
+        <div className="space-y-4">
 
-            {/* ACTION BUTTONS (Headline removed as requested) */}
-            <div className="flex flex-wrap justify-end items-center gap-3 mb-6">
+            {/* ACTION BUTTONS */}
+            <div className="flex flex-wrap justify-end items-center gap-2 sm:gap-3">
                 <button
                     type="button"
                     onClick={() => exportBOMMasterReport(boms)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm shadow-xs transition"
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-xs sm:text-sm shadow-xs transition cursor-pointer"
                 >
-                    <Download size={15} /> Download BOM Report
+                    <Download size={15} /> Export Report
                 </button>
 
                 <button
@@ -301,7 +301,7 @@ const BOMManagementPage = () => {
                         setProductError("");
                         setShowProductModal(true);
                     }}
-                    className="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-lg text-sm shadow-xs transition"
+                    className="flex-1 sm:flex-initial px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-lg text-xs sm:text-sm shadow-xs transition cursor-pointer"
                 >
                     + Create Product
                 </button>
@@ -309,7 +309,7 @@ const BOMManagementPage = () => {
                 <button
                     type="button"
                     onClick={handleCreate}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm shadow-xs transition"
+                    className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-xs sm:text-sm shadow-xs transition cursor-pointer"
                 >
                     + Create BOM
                 </button>

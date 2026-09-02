@@ -7,13 +7,13 @@ const BOMMainPage = () => {
     const [activeTab, setActiveTab] = useState("master");
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="space-y-4">
 
-            {/* PAGE TABS (Headline removed as requested) */}
-            <div className="bg-white border-b border-slate-200 px-6 pt-4">
+            {/* PAGE TABS */}
+            <div className="bg-white border border-slate-200 px-4 sm:px-6 pt-3 sm:pt-4 rounded-xl shadow-xs">
 
                 {/* TABS */}
-                <div className="flex gap-8">
+                <div className="flex gap-4 sm:gap-8 overflow-x-auto">
 
                     {/* BOM MASTER */}
                     <button

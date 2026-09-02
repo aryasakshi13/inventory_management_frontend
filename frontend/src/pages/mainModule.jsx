@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Users,
   ShoppingBag,
@@ -11,7 +11,8 @@ import {
   Tag,
   Cpu,
   Boxes,
-  User
+  User,
+  X
 } from "lucide-react";
 import { useNavigate, useLocation, Routes, Route, Navigate } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
@@ -35,6 +36,7 @@ import ProductTab from "../feature/product/Product";
 const MainModule = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -44,6 +46,11 @@ const MainModule = () => {
       navigate("/login", { replace: true });
     }
   }, [navigate]);
+
+  // Auto-close sidebar on route changes on mobile
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
 
   const menuItems = [
     {
@@ -132,8 +139,21 @@ const MainModule = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-900 text-xs">
-      {/* Sidebar */}
-      <div className="w-64 bg-slate-900 text-white p-3.5 flex flex-col h-screen border-r border-slate-800 shrink-0">
+      {/* Mobile Drawer Backdrop Overlay */}
+      {isSidebarOpen && (
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          aria-hidden="true"
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-300"
+        />
+      )}
+
+      {/* Sidebar Drawer */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 sm:w-72 lg:w-64 bg-slate-900 text-white p-3.5 flex flex-col h-screen border-r border-slate-800 shrink-0 transform transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+          isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        }`}
+      >
         {/* Sidebar Header */}
         <div className="px-2.5 py-3 mb-2 shrink-0 flex items-center justify-between border-b border-slate-800/80">
           <div>
@@ -143,6 +163,16 @@ const MainModule = () => {
             </h2>
             <p className="text-[10px] text-slate-400 font-medium">Operations & Sales</p>
           </div>
+
+          {/* Close button on mobile */}
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(false)}
+            className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* Scrollable Menu Items */}
@@ -159,6 +189,7 @@ const MainModule = () => {
                 key={item.name}
                 onClick={() => {
                   navigate(`/pages/mainModule/${item.path}`);
+                  setIsSidebarOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-pointer text-xs font-semibold ${
                   isItemActive
@@ -184,7 +215,10 @@ const MainModule = () => {
 
           return (
             <div
-              onClick={() => navigate("/pages/mainModule/profile")}
+              onClick={() => {
+                navigate("/pages/mainModule/profile");
+                setIsSidebarOpen(false);
+              }}
               className={`mt-2 pt-2.5 border-t border-slate-800/80 cursor-pointer p-2 rounded-xl transition-all shrink-0 ${
                 isProfileActive
                   ? "bg-blue-600/25 border-blue-500/40 ring-1 ring-blue-500/50"
@@ -214,15 +248,19 @@ const MainModule = () => {
             </div>
           );
         })()}
-      </div>
+      </aside>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-gray-50 text-slate-800">
         {/* Top Header Navbar */}
-        <Navbar activeTab={activeTab} />
+        <Navbar
+          activeTab={activeTab}
+          onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+          isSidebarOpen={isSidebarOpen}
+        />
 
         {/* Viewport Content */}
-        <div className="flex-1 p-6 overflow-y-auto">
+        <div className="flex-1 p-3.5 sm:p-5 md:p-6 overflow-y-auto overflow-x-hidden">
           <Routes>
             <Route index element={<Navigate to="store" replace />} />
 

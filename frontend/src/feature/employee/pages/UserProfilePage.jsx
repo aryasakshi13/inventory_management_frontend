@@ -59,24 +59,24 @@ export const UserProfilePage = () => {
     .toUpperCase() || "EP";
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+    <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6">
 
       {/* 🌟 1. PROFILE BANNER / HERO CARD */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-8 shadow-xl border border-blue-900/40">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-5 sm:p-6 md:p-8 shadow-xl border border-blue-900/40">
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 -mb-8 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5">
             {/* Avatar */}
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-2xl shadow-lg border-2 border-white/20">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xl sm:text-2xl shadow-lg border-2 border-white/20 shrink-0">
               {initials}
             </div>
 
             {/* Title Details */}
             <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="text-2xl font-bold tracking-tight text-white">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
                   {employeeName}
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-400/30">
@@ -88,12 +88,12 @@ export const UserProfilePage = () => {
                 </span>
               </div>
 
-              <p className="text-sm text-slate-300 flex items-center gap-2">
-                <Mail className="w-4 h-4 text-blue-400" />
-                {email}
+              <p className="text-xs sm:text-sm text-slate-300 flex items-center gap-2">
+                <Mail className="w-4 h-4 text-blue-400 shrink-0" />
+                <span className="truncate">{email}</span>
               </p>
 
-              <p className="text-xs text-slate-400 flex items-center gap-2">
+              <p className="text-xs text-slate-400 flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-blue-300 font-semibold">{empCode}</span>
                 <span>•</span>
                 <span>{designation}</span>
@@ -105,7 +105,7 @@ export const UserProfilePage = () => {
           <Button
             onClick={handleLogout}
             variant="outline"
-            className="bg-white/10 hover:bg-rose-500/20 text-white hover:text-rose-300 border-white/20 hover:border-rose-400/40 text-xs font-semibold gap-2 transition-all shrink-0 cursor-pointer"
+            className="w-full md:w-auto bg-white/10 hover:bg-rose-500/20 text-white hover:text-rose-300 border-white/20 hover:border-rose-400/40 text-xs font-semibold gap-2 transition-all shrink-0 cursor-pointer justify-center"
           >
             <LogOut className="w-4 h-4" />
             Sign Out
@@ -115,7 +115,7 @@ export const UserProfilePage = () => {
 
       {/* 🌟 2. UNIFIED DETAIL CARD */}
       <Card className="bg-white shadow-sm border-gray-200">
-        <CardHeader className="pb-4 border-b border-gray-100">
+        <CardHeader className="pb-4 border-b border-gray-100 p-4 sm:p-6">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-blue-600" />
             <CardTitle className="text-base font-semibold text-gray-900">
@@ -127,7 +127,7 @@ export const UserProfilePage = () => {
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-4 sm:p-6 space-y-6">
           {/* 1. Account & System Identity */}
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">

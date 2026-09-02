@@ -81,7 +81,10 @@ export const StorePage = () => {
   const fetchStoreProductionData = useCallback(async () => {
     try {
       setLoadingProduction(true);
-      const res = await axios.get('http://localhost:5001/api/production').catch(() => ({ data: [] }));
+      const prodUrl = window.location.hostname === 'localhost'
+        ? 'http://localhost:5001/api/production'
+        : 'https://www.namami-infotech.com/inventory/api/production';
+      const res = await axios.get(prodUrl, { withCredentials: true }).catch(() => ({ data: [] }));
       const allTasks = Array.isArray(res?.data)
         ? res.data
         : Array.isArray(res?.data?.data)
@@ -181,7 +184,7 @@ export const StorePage = () => {
   );
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto p-4 text-xs">
+    <div className="space-y-4 sm:space-y-5 max-w-7xl mx-auto text-xs">
       {/* Error Alert */}
       {error && (
         <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl flex items-center justify-between text-xs">

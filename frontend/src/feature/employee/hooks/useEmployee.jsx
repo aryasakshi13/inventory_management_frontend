@@ -237,6 +237,12 @@ export const useEmployee = () => {
     }
   }, [fetchEmployees]);
 
+  const handleClearFilters = useCallback(() => {
+    setSearchTerm('');
+    setRoleFilter('');
+    setStatusFilter('');
+  }, []);
+
   return {
     employees,
     loading,
@@ -248,6 +254,7 @@ export const useEmployee = () => {
     setRoleFilter,
     statusFilter,
     setStatusFilter,
+    handleClearFilters,
     isModalOpen,
     editingId,
     formData,

@@ -24,7 +24,10 @@ export const StoreProductionRequestsModal = ({ isOpen, onClose, onRefreshStore }
     try {
       setLoading(true);
       setErrorMsg('');
-      const res = await axios.get('http://localhost:5001/api/production').catch(() => ({ data: [] }));
+      const prodUrl = window.location.hostname === 'localhost'
+        ? 'http://localhost:5001/api/production'
+        : 'https://www.namami-infotech.com/inventory/api/production';
+      const res = await axios.get(prodUrl, { withCredentials: true }).catch(() => ({ data: [] }));
       const allTasks = Array.isArray(res?.data)
         ? res.data
         : Array.isArray(res?.data?.data)

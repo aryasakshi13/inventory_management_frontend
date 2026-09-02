@@ -168,17 +168,17 @@ export const ProductionListPage = () => {
   const totalScrapCount = tasks.reduce((sum, t) => sum + (parseInt(t.rejected_quantity, 10) || 0), 0);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5 pb-12 text-xs">
+    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-5 text-xs">
       {/* 🌟 1. PAGE HEADER */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shrink-0">
             <Cpu className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
               Production Management
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
+              <span className="text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
                 {totalOrders} Work Orders
               </span>
             </h1>
@@ -190,7 +190,7 @@ export const ProductionListPage = () => {
 
         <button
           onClick={() => setIsCreateOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all duration-200 active:scale-[0.98] cursor-pointer shrink-0"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all duration-200 active:scale-[0.98] cursor-pointer shrink-0"
         >
           <Plus size={15} />
           <span>New Work Order</span>
@@ -302,7 +302,7 @@ export const ProductionListPage = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse min-w-[850px]">
                 <thead>
                   <tr className="bg-slate-50 text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     <th className="py-3 px-4">Task ID & Date</th>
@@ -407,7 +407,7 @@ export const ProductionListPage = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse min-w-[850px]">
                 <thead>
                   <tr className="bg-slate-50 text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     <th className="py-3 px-4">Task ID & Date</th>
@@ -521,7 +521,7 @@ export const ProductionListPage = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse min-w-[850px]">
                 <thead>
                   <tr className="bg-slate-50 text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     <th className="py-3 px-4">Task ID & Date</th>
