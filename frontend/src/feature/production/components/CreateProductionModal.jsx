@@ -13,7 +13,8 @@ import {
   CheckCircle2,
   Hash,
   Sparkles,
-  Boxes
+  Boxes,
+  Lock
 } from 'lucide-react';
 import axios from 'axios';
 import { getNextTaskId, createProductionTask } from '../services/productionService';
@@ -39,7 +40,9 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
   const [productsList, setProductsList] = useState([]);
   const [storeItemsList, setStoreItemsList] = useState([]);
   const [bomList, setBomList] = useState([]);
+  const [employeesList, setEmployeesList] = useState([]);
   const [selectedBomId, setSelectedBomId] = useState('');
+  const [availableProductBoms, setAvailableProductBoms] = useState([]);
 
   const [loadingInitial, setLoadingInitial] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -81,6 +84,18 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
               ? bomRes.data.data
               : [];
           setBomList(bData);
+
+          // 5. Fetch Employees for Project Incharge
+          const empRes = await axios.get('http://localhost:5001/api/employees', { withCredentials: true }).catch(() => ({ data: [] }));
+          const eData = Array.isArray(empRes?.data)
+            ? empRes.data
+            : Array.isArray(empRes?.data?.data)
+              ? empRes.data.data
+              : Array.isArray(empRes?.data?.employees)
+                ? empRes.data.employees
+                : [];
+          setEmployeesList(eData);
+
         } catch (err) {
           console.error("Error initializing production modal:", err);
         } finally {
@@ -91,30 +106,30 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
     }
   }, [isOpen]);
 
-  // Handle Product Selection
-  const handleProductChange = (e) => {
-    const val = e.target.value;
-    setProductName(val);
-    const matched = productsList.find((p) => (p.product_name || p.name) === val);
-    if (matched) {
-      setProductId(matched.id || '');
-      // Check if this product has a BOM
-      const prodBoms = bomList.filter((b) => Number(b.product_id) === Number(matched.id));
-      if (prodBoms.length > 0) {
-        applyBom(prodBoms[0], proposedQty);
-      }
-    }
-    if (!taskTitle || taskTitle.startsWith('Build')) {
-      setTaskTitle(`Build ${proposedQty}x ${val || 'Goods'}`);
-    }
-  };
+  // Filter ONLY Project Incharges
+  const projectInchargeEmployees = employeesList.filter((emp) => {
+    const roleText = (emp.role || '').toLowerCase().trim();
+    const desigText = (emp.designation || '').toLowerCase().trim();
+    return (
+      roleText === 'project incharge' ||
+      desigText === 'project incharge' ||
+      roleText.includes('project incharge') ||
+      desigText.includes('project incharge') ||
+      roleText.includes('incharge') ||
+      desigText.includes('incharge') ||
+      roleText.includes('project lead')
+    );
+  });
 
   // Apply BOM items
   const applyBom = (bom, qty) => {
+    if (!bom) return;
     setSelectedBomId(bom.id || '');
     try {
       let rawItems = [];
-      if (typeof bom.store_items_id === 'string') {
+      if (Array.isArray(bom.items) && bom.items.length > 0) {
+        rawItems = bom.items;
+      } else if (typeof bom.store_items_id === 'string') {
         rawItems = JSON.parse(bom.store_items_id);
       } else if (Array.isArray(bom.store_items_id)) {
         rawItems = bom.store_items_id;
@@ -122,14 +137,18 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
 
       if (Array.isArray(rawItems) && rawItems.length > 0) {
         const mapped = rawItems.map((bi) => {
-          const sItem = storeItemsList.find((s) => s.id === (bi.id || bi.store_item_id));
-          const unitQty = parseFloat(bi.quantity || bi.qty || 1);
+          const itemId = Number(bi.item_id || bi.itemId || bi.id || bi.store_item_id);
+          const sItem = storeItemsList.find((s) => Number(s.id) === itemId);
+          const unitQty = Number(bi.quantity ?? bi.qty ?? bi.qty_per_unit ?? 1) || 1;
+          const uomVal = bi.unit || sItem?.unit || sItem?.uom || 'Nos';
+          const targetQty = Number(qty) || 1;
+
           return {
-            store_item_id: bi.id || bi.store_item_id || sItem?.id || '',
+            store_item_id: sItem ? sItem.id : (itemId || ''),
             item_name: bi.item_name || bi.name || sItem?.item_name || 'Component Item',
-            unit: bi.unit || sItem?.unit || 'Nos',
+            unit: uomVal,
             qty_per_unit: unitQty,
-            required_qty: unitQty * parseFloat(qty || 1)
+            required_qty: Number((unitQty * targetQty).toFixed(2))
           };
         });
         setItems(mapped);
@@ -139,33 +158,70 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
+  // Handle Product Selection
+  const handleProductChange = (e) => {
+    const val = e.target.value;
+    setProductName(val);
+    const matched = productsList.find((p) => (p.product_name || p.name) === val);
+    if (matched) {
+      setProductId(matched.id || '');
+      // Check if this product has BOMs
+      const prodBoms = bomList.filter(
+        (b) => Number(b.product_id) === Number(matched.id) ||
+               (b.product_name && b.product_name.toLowerCase() === matched.product_name.toLowerCase())
+      );
+      setAvailableProductBoms(prodBoms);
+      if (prodBoms.length > 0) {
+        applyBom(prodBoms[0], proposedQty || 1);
+      } else {
+        setSelectedBomId('');
+      }
+    } else {
+      setProductId('');
+      setAvailableProductBoms([]);
+      setSelectedBomId('');
+    }
+
+    if (!taskTitle || taskTitle.startsWith('Build')) {
+      setTaskTitle(`Build ${proposedQty || 1}x ${val || 'Goods'}`);
+    }
+  };
+
   // When proposed quantity changes, recalculate item required quantities
   const handleQtyChange = (newQty) => {
-    const q = Math.max(1, parseInt(newQty, 10) || 1);
-    setProposedQty(q);
+    setProposedQty(newQty);
+    const numericQty = parseFloat(newQty) || 0;
     if (productName && (!taskTitle || taskTitle.startsWith('Build'))) {
-      setTaskTitle(`Build ${q}x ${productName}`);
+      setTaskTitle(`Build ${numericQty}x ${productName}`);
     }
     setItems((prev) =>
-      prev.map((it) => ({
-        ...it,
-        required_qty: (parseFloat(it.qty_per_unit) || 1) * q
-      }))
+      prev.map((it) => {
+        const uQty = Number(it.qty_per_unit ?? 1) || 1;
+        return {
+          ...it,
+          qty_per_unit: uQty,
+          required_qty: Number((uQty * (numericQty || 1)).toFixed(2))
+        };
+      })
     );
   };
 
-  // Handle Item Row Changes
+  // Handle Item Row Selection
   const handleItemSelect = (index, storeItemId) => {
     const sItem = storeItemsList.find((s) => String(s.id) === String(storeItemId));
     setItems((prev) => {
       const updated = [...prev];
+      const currentQty = parseFloat(proposedQty) || 1;
       if (sItem) {
+        const uomVal = sItem.unit || sItem.uom || 'Nos';
+        const unitQty = Number(updated[index]?.qty_per_unit ?? 1) || 1;
         updated[index] = {
           ...updated[index],
           store_item_id: sItem.id,
           item_name: sItem.item_name,
-          unit: sItem.unit || 'Nos',
-          required_qty: (parseFloat(updated[index].qty_per_unit) || 1) * proposedQty
+          unit: uomVal,
+          qty_per_unit: unitQty,
+          required_qty: Number((unitQty * currentQty).toFixed(2))
         };
       } else {
         updated[index] = {
@@ -178,23 +234,11 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
     });
   };
 
-  const handleItemQtyPerUnitChange = (index, val) => {
-    const unitQ = Math.max(0.01, parseFloat(val) || 1);
-    setItems((prev) => {
-      const updated = [...prev];
-      updated[index] = {
-        ...updated[index],
-        qty_per_unit: unitQ,
-        required_qty: unitQ * proposedQty
-      };
-      return updated;
-    });
-  };
-
   const addItemRow = () => {
+    const currentQty = parseFloat(proposedQty) || 1;
     setItems((prev) => [
       ...prev,
-      { store_item_id: '', item_name: '', unit: 'Nos', qty_per_unit: 1, required_qty: proposedQty }
+      { store_item_id: '', item_name: '', unit: 'Nos', qty_per_unit: 1, required_qty: currentQty }
     ]);
   };
 
@@ -203,11 +247,24 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
     setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleStartDateChange = (newStart) => {
+    setStartDate(newStart);
+    if (dueDate && dueDate < newStart) {
+      setDueDate(newStart);
+    }
+  };
+
   // Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!productName.trim()) {
-      setFormError('Please select or specify the Product to manufacture.');
+      setFormError('Please select the Product to manufacture.');
+      return;
+    }
+
+    const finalProposed = parseInt(proposedQty, 10);
+    if (!finalProposed || finalProposed <= 0) {
+      setFormError('Target Batch Quantity must be at least 1.');
       return;
     }
 
@@ -226,8 +283,8 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
         product_id: productId || null,
         product_name: productName.trim(),
         bom_id: selectedBomId || null,
-        task_title: taskTitle.trim() || `Build ${proposedQty}x ${productName.trim()}`,
-        proposed_quantity: proposedQty,
+        task_title: taskTitle.trim() || `Build ${finalProposed}x ${productName.trim()}`,
+        proposed_quantity: finalProposed,
         priority,
         assigned_to: assignedTo.trim() || null,
         start_date: startDate || null,
@@ -255,7 +312,7 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-3xl overflow-hidden my-6 animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-4xl overflow-hidden my-6 animate-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 bg-slate-50 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -270,7 +327,7 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
                 </span>
               </div>
               <p className="text-[11px] text-gray-500">
-                Plan goods manufacturing, request store stock components, and track finished output
+                Plan manufacturing batch, auto-load BOM components, request store stock, and produce finished goods
               </p>
             </div>
           </div>
@@ -293,9 +350,16 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
 
           {/* 1. Target Product & Quantity Section */}
           <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-4">
-            <div className="flex items-center gap-2 text-gray-900 font-bold text-xs uppercase tracking-wider">
-              <Package size={14} className="text-blue-600" />
-              <span>1. Target Finished Product & Target Quantity</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-gray-900 font-bold text-xs uppercase tracking-wider">
+                <Package size={14} className="text-blue-600" />
+                <span>1. Target Finished Product & Batch Quantity</span>
+              </div>
+              {selectedBomId && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <CheckCircle2 size={12} /> BOM Auto-Loaded (BOM #{selectedBomId})
+                </span>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -321,38 +385,77 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
                 </select>
 
                 {productName && (
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     {/* Check if finished good exists in store items */}
                     {(() => {
                       const fgItem = storeItemsList.find(
-                        (s) => (s.product_id && s.product_id === productId) ||
+                        (s) => (s.product_id && Number(s.product_id) === Number(productId)) ||
                                (s.item_type === 'finished_good' && s.item_name?.toLowerCase() === productName.toLowerCase())
                       );
                       if (fgItem) {
                         return (
-                          <span className="text-[10px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                          <span className="text-[10px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 font-medium">
                             Current Finished Stock: <b>{fgItem.quantity || 0} {fgItem.unit || 'Nos'}</b>
                           </span>
                         );
                       }
                       return null;
                     })()}
+
+                    {/* BOM status */}
+                    {availableProductBoms.length > 1 ? (
+                      <div className="flex items-center gap-1 text-[11px]">
+                        <span className="text-slate-500">Select Recipe BOM:</span>
+                        <select
+                          value={selectedBomId}
+                          onChange={(e) => {
+                            const b = availableProductBoms.find((x) => String(x.id) === String(e.target.value));
+                            if (b) applyBom(b, proposedQty);
+                          }}
+                          className="px-2 py-0.5 border border-slate-300 rounded-md bg-white text-xs"
+                        >
+                          {availableProductBoms.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.bom_name || `BOM #${b.id}`} {b.capacity ? `(${b.capacity})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : availableProductBoms.length === 0 ? (
+                      <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                        No BOM found for this product. You can manually add raw material components below.
+                      </span>
+                    ) : null}
                   </div>
                 )}
               </div>
 
-              {/* Proposed Quantity */}
+              {/* Proposed Target Quantity (Positive Numbers Only, Min 1, 0 Not Allowed) */}
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-gray-700">
-                  Proposed Target Quantity <span className="text-rose-500">*</span>
+                  Target Batch Quantity <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
                     required
                     value={proposedQty}
-                    onChange={(e) => handleQtyChange(e.target.value)}
+                    onChange={(e) => {
+                      const cleanVal = e.target.value.replace(/\D/g, ''); // only numeric digits
+                      if (cleanVal === '' || cleanVal === '0') {
+                        setProposedQty('');
+                      } else {
+                        const num = Math.max(1, parseInt(cleanVal, 10));
+                        handleQtyChange(num);
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!proposedQty || Number(proposedQty) < 1) {
+                        handleQtyChange(1);
+                      }
+                    }}
+                    placeholder="1"
                     className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-[11px]">
@@ -362,129 +465,120 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
             </div>
 
-            {/* Task Title & Priority */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="md:col-span-2 space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">Task Title / Description</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Build 5x Gaming Laptop (Batch A)"
-                  value={taskTitle}
-                  onChange={(e) => setTaskTitle(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-700">Priority</label>
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                >
-                  <option value="Low">🟢 Low</option>
-                  <option value="Medium">🔵 Medium</option>
-                  <option value="High">🟠 High</option>
-                  <option value="Urgent">🔴 Urgent</option>
-                </select>
-              </div>
+            {/* Task Title */}
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-gray-700">Task Title / Description</label>
+              <input
+                type="text"
+                placeholder="e.g. Build 5x Solar Inverter 5kVA (Batch A)"
+                value={taskTitle}
+                onChange={(e) => setTaskTitle(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
             </div>
           </div>
 
-          {/* 2. Component Raw Materials from Store */}
+          {/* 2. Component Raw Materials from Store (BOM Breakdown - Read-Only Formulas) */}
           <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-gray-900 font-bold text-xs uppercase tracking-wider">
-                <Boxes size={14} className="text-indigo-600" />
+                <Boxes className="w-4 h-4 text-indigo-600" />
                 <span>2. Required Raw Material Store Items (BOM Breakdown)</span>
               </div>
-              <button
-                type="button"
-                onClick={addItemRow}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold rounded-lg transition cursor-pointer"
-              >
-                <Plus size={13} /> Add Item
-              </button>
+              {availableProductBoms.length === 0 && (
+                <button
+                  type="button"
+                  onClick={addItemRow}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200 transition cursor-pointer"
+                >
+                  <Plus size={13} />
+                  <span>Add Component Item</span>
+                </button>
+              )}
             </div>
 
-            <p className="text-[11px] text-gray-500">
-              Items needed to produce <strong>{proposedQty}</strong> unit(s) of this product. When requested, Store will issue stock directly into production.
+            <p className="text-[11px] text-gray-500 flex items-center gap-1.5">
+              <Lock size={12} className="text-gray-400 shrink-0" />
+              <span>Raw material components & ratios are strictly fixed from BOM Master for {proposedQty || 1} unit(s).</span>
             </p>
+
+            {/* Table Header */}
+            <div className="hidden sm:grid grid-cols-12 gap-2 text-[10px] font-bold text-gray-500 uppercase px-3 py-1 bg-slate-100/70 rounded-lg">
+              <div className="col-span-4">Store Component Item</div>
+              <div className="col-span-3">Available Store Stock</div>
+              <div className="col-span-2 text-center">Qty / Unit (Locked)</div>
+              <div className="col-span-2 text-center">Total Req. Qty (Calculated)</div>
+              <div className="col-span-1 text-center">Unit (UOM)</div>
+            </div>
 
             <div className="space-y-2">
               {items.map((it, idx) => {
-                const matchedStoreItem = storeItemsList.find((s) => s.id === it.store_item_id);
-                const currentStock = matchedStoreItem ? matchedStoreItem.quantity ?? 0 : null;
+                const matchedStoreItem = storeItemsList.find(
+                  (s) => Number(s.id) === Number(it.store_item_id) ||
+                         (s.item_name && it.item_name && s.item_name.toLowerCase().trim() === it.item_name.toLowerCase().trim())
+                );
+                const currentStock = matchedStoreItem ? (matchedStoreItem.quantity ?? 0) : (it.current_store_stock ?? null);
                 const isStockShortage = currentStock !== null && currentStock < it.required_qty;
+                const displayQtyPerUnit = (it.qty_per_unit !== undefined && it.qty_per_unit !== null && it.qty_per_unit !== '')
+                  ? it.qty_per_unit
+                  : 1;
 
                 return (
                   <div
                     key={idx}
-                    className="p-2.5 bg-white border border-gray-200 rounded-xl grid grid-cols-12 gap-2 items-center"
+                    className="p-2.5 bg-white border border-gray-200 rounded-xl grid grid-cols-1 sm:grid-cols-12 gap-2 items-center shadow-2xs"
                   >
-                    {/* Item Select / Search */}
-                    <div className="col-span-5 space-y-1">
-                      <select
-                        value={it.store_item_id || it.item_name}
-                        onChange={(e) => handleItemSelect(idx, e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-gray-300 rounded-lg text-gray-900 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      >
-                        <option value="">-- Select Store Component --</option>
-                        {storeItemsList.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.item_name} (In Stock: {s.quantity ?? 0} {s.unit || s.uom || ''})
-                          </option>
-                        ))}
-                      </select>
-                      {currentStock !== null && (
-                        <div className="flex items-center gap-1.5 text-[10px]">
-                          <span className="text-gray-500">Available Stock: <strong>{currentStock}</strong> {it.unit}</span>
-                          {isStockShortage && (
-                            <span className="text-rose-600 font-bold bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200">
-                              Shortage!
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Qty Per Unit */}
-                    <div className="col-span-2 space-y-0.5">
-                      <label className="text-[10px] text-gray-500 font-semibold block">Qty / Unit</label>
-                      <input
-                        type="number"
-                        step="any"
-                        min="0.01"
-                        value={it.qty_per_unit}
-                        onChange={(e) => handleItemQtyPerUnitChange(idx, e.target.value)}
-                        className="w-full px-2 py-1 bg-slate-50 border border-gray-300 rounded-lg text-gray-900 font-bold text-center"
-                      />
-                    </div>
-
-                    {/* Total Required Qty */}
-                    <div className="col-span-3 space-y-0.5">
-                      <label className="text-[10px] text-indigo-600 font-bold block">Total Req. Qty</label>
-                      <div className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-900 font-bold text-center">
-                        {it.required_qty} {it.unit}
+                    {/* 1. Component Item (Fixed & Locked from BOM) */}
+                    <div className="col-span-12 sm:col-span-4">
+                      <div className="w-full px-3 py-2 bg-slate-50 border border-gray-200 rounded-xl text-gray-900 font-bold text-xs flex items-center justify-between">
+                        <span className="truncate">{it.item_name || 'Component Item'}</span>
+                        <span className="text-[10px] text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 font-bold shrink-0">
+                          BOM Locked
+                        </span>
                       </div>
                     </div>
 
-                    {/* Unit */}
-                    <div className="col-span-1">
-                      <label className="text-[10px] text-gray-400 block">Unit</label>
-                      <span className="text-[11px] text-gray-600 font-medium">{it.unit}</span>
+                    {/* 2. Available Store Stock Status */}
+                    <div className="col-span-6 sm:col-span-3">
+                      {currentStock !== null ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-xs font-bold ${isStockShortage ? 'text-rose-600' : 'text-slate-800'}`}>
+                            {currentStock} {it.unit} in Store
+                          </span>
+                          {isStockShortage ? (
+                            <span className="text-[10px] text-rose-700 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                              Low Stock
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              Available
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-[10px] italic">Checking stock...</span>
+                      )}
                     </div>
 
-                    {/* Delete Row */}
-                    <div className="col-span-1 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => removeItemRow(idx)}
-                        disabled={items.length <= 1}
-                        className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition disabled:opacity-30 cursor-pointer"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                    {/* 3. Qty Per Unit (READ-ONLY / LOCKED FROM BOM) */}
+                    <div className="col-span-6 sm:col-span-2 text-center">
+                      <div className="px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-lg text-slate-900 font-bold text-xs">
+                        {displayQtyPerUnit}
+                      </div>
+                    </div>
+
+                    {/* 4. Total Required Qty (READ-ONLY CALCULATED QUANTITY) */}
+                    <div className="col-span-6 sm:col-span-2 text-center">
+                      <div className="px-2 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-900 font-bold text-xs">
+                        {it.required_qty}
+                      </div>
+                    </div>
+
+                    {/* 5. Unit (UOM - READ-ONLY BADGE) */}
+                    <div className="col-span-6 sm:col-span-1 text-center">
+                      <span className="px-2 py-1.5 bg-slate-100 border border-slate-200 rounded-md text-slate-700 font-bold text-[11px] inline-block w-full">
+                        {it.unit || 'Nos'}
+                      </span>
                     </div>
                   </div>
                 );
@@ -493,52 +587,93 @@ export const CreateProductionModal = ({ isOpen, onClose, onSuccess }) => {
           </div>
 
           {/* 3. Assignment & Timeline */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-gray-700">Assigned Technician / Lead</label>
-              <div className="relative">
-                <User className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="e.g. Ramesh Kumar"
+          <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-3">
+            <div className="text-gray-900 font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+              <User size={14} className="text-blue-600" />
+              <span>3. Project In-charge & Production Timeline</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Project Incharge Dropdown (Only Role: Project Incharge) */}
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">
+                  Project In-charge <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
-                  className="w-full pl-8.5 pr-3 py-2 bg-slate-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                >
+                  <option value="">-- Select Project In-charge --</option>
+                  {(projectInchargeEmployees.length > 0 ? projectInchargeEmployees : employeesList).map((emp) => {
+                    const empName = emp.employee_name || emp.name || `Employee #${emp.id}`;
+                    const empRole = emp.designation || emp.role || 'Project Incharge';
+                    const empCode = emp.employee_code ? ` (${emp.employee_code})` : '';
+                    return (
+                      <option key={emp.id || empName} value={empName}>
+                        {empName} — {empRole}{empCode}
+                      </option>
+                    );
+                  })}
+                </select>
+                {projectInchargeEmployees.length === 0 && employeesList.length > 0 && (
+                  <p className="text-[10px] text-amber-600">
+                    No employees with role 'Project Incharge' found. Listing available staff.
+                  </p>
+                )}
+              </div>
+
+              {/* Start Date */}
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">Start Date</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onClick={(e) => {
+                    try {
+                      if (typeof e.target.showPicker === 'function') e.target.showPicker();
+                    } catch (err) {}
+                  }}
+                  onChange={(e) => handleStartDateChange(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs cursor-pointer"
                 />
+              </div>
+
+              {/* Target Due Date (Expected Finish Deadline - Cannot be before Start Date) */}
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">
+                  Target Due Date (Finish Deadline)
+                </label>
+                <input
+                  type="date"
+                  min={startDate || new Date().toISOString().split('T')[0]}
+                  value={dueDate}
+                  onClick={(e) => {
+                    try {
+                      if (typeof e.target.showPicker === 'function') e.target.showPicker();
+                    } catch (err) {}
+                  }}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs cursor-pointer"
+                />
+                <span className="text-[10px] text-gray-400">
+                  Must be on or after {startDate || 'Start Date'}
+                </span>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-gray-700">Start Date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {/* Notes */}
+            <div className="space-y-1 pt-1">
+              <label className="block text-xs font-semibold text-gray-700">Production Notes / Specs</label>
+              <textarea
+                rows={2}
+                placeholder="Assembly guidelines, batch instructions, or quality checks..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs resize-none"
               />
             </div>
-
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-gray-700">Target Due Date</label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-1">
-            <label className="block text-xs font-semibold text-gray-700">Production Notes / Specs</label>
-            <textarea
-              rows={2}
-              placeholder="Assembly instructions, serial number range, or special guidelines..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
           </div>
 
           {/* Footer Buttons */}

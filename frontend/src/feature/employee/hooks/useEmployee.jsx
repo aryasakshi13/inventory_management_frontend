@@ -180,24 +180,6 @@ export const useEmployee = () => {
       return;
     }
 
-    const branch = formData.location_branch?.trim() || '';
-    if (!branch || branch.length < 2) {
-      setFormError('Location / Branch is required (minimum 2 characters).');
-      return;
-    }
-
-    const department = formData.department?.trim() || '';
-    if (!department || department.length < 2) {
-      setFormError('Department is required (minimum 2 characters).');
-      return;
-    }
-
-    const designation = formData.designation?.trim() || '';
-    if (!designation || designation.length < 2) {
-      setFormError('Designation is required (minimum 2 characters).');
-      return;
-    }
-
     setSubmitting(true);
 
     try {
@@ -207,10 +189,10 @@ export const useEmployee = () => {
         email_id: email,
         mobile_number: mobile,
         role: role,
-        location_branch: branch,
-        department: department,
-        designation: designation,
-        employee_status: 'Active', // Default to Active
+        location_branch: formData.location_branch || '',
+        department: formData.department || '',
+        designation: formData.designation || '',
+        employee_status: formData.employee_status || 'Active',
       };
 
       if (editingId) {

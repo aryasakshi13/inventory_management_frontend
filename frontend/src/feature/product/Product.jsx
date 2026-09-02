@@ -265,7 +265,6 @@ const ProductTab = () => {
                   <th className="py-3 px-4">#</th>
                   <th className="py-3 px-4">Product Name</th>
                   <th className="py-3 px-4">Fulfilment Mode</th>
-                  <th className="py-3 px-4">Fulfillment Details</th>
                   <th className="py-3 px-4">Description</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
@@ -294,17 +293,6 @@ const ProductTab = () => {
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                             <Truck size={12} />
                             Site Assembly / Direct Dispatch
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">
-                        {isMfg ? (
-                          <span className="text-slate-500">
-                            Finished Good Stock Check ➔ Production Order on Shortage ➔ Dispatch Finished Good
-                          </span>
-                        ) : (
-                          <span className="text-slate-500">
-                            Project BOQ / BOM Calc ➔ Dispatch Individual Raw Material Items (No Production)
                           </span>
                         )}
                       </td>
@@ -384,56 +372,17 @@ const ProductTab = () => {
 
               {/* Fulfilment Mode Selector */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
                   Fulfilment Mode *
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Mode 1: Site Assembly */}
-                  <div
-                    onClick={() => setFormData({ ...formData, fulfilment_mode: "site_assembly" })}
-                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${
-                      formData.fulfilment_mode === "site_assembly"
-                        ? "border-amber-500 bg-amber-50/50 shadow-xs"
-                        : "border-slate-200 hover:border-slate-300 bg-white"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
-                        <Truck size={16} />
-                      </div>
-                      {formData.fulfilment_mode === "site_assembly" && (
-                        <CheckCircle className="text-amber-600" size={18} />
-                      )}
-                    </div>
-                    <div className="font-bold text-slate-900 text-xs">Site Assembly</div>
-                    <div className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                      Direct Material Dispatch. Individual BOM items dispatch on Delivery Challan (No Production Order).
-                    </div>
-                  </div>
-
-                  {/* Mode 2: In-House Manufacturing */}
-                  <div
-                    onClick={() => setFormData({ ...formData, fulfilment_mode: "in_house_manufacturing" })}
-                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${
-                      formData.fulfilment_mode === "in_house_manufacturing"
-                        ? "border-emerald-500 bg-emerald-50/50 shadow-xs"
-                        : "border-slate-200 hover:border-slate-300 bg-white"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                        <Factory size={16} />
-                      </div>
-                      {formData.fulfilment_mode === "in_house_manufacturing" && (
-                        <CheckCircle className="text-emerald-600" size={18} />
-                      )}
-                    </div>
-                    <div className="font-bold text-slate-900 text-xs">In-House Manufacturing</div>
-                    <div className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                      Checks finished good stock. Creates Production Order for shortage. Dispatches finished product.
-                    </div>
-                  </div>
-                </div>
+                <select
+                  value={formData.fulfilment_mode}
+                  onChange={(e) => setFormData({ ...formData, fulfilment_mode: e.target.value })}
+                  className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white font-semibold text-slate-900 cursor-pointer"
+                >
+                  <option value="site_assembly">Site Assembly</option>
+                  <option value="in_house_manufacturing">In-House Manufacturing</option>
+                </select>
               </div>
 
               {/* Description */}

@@ -17,11 +17,20 @@ import {
   TrendingUp,
   AlertTriangle,
   ArrowRight,
-  Filter
+  Filter,
+  Send,
+  Sparkles,
+  ClipboardList,
+  Truck,
+  RotateCcw,
+  Check,
+  FileText,
+  ShieldAlert
 } from 'lucide-react';
 import {
   getAllProductionTasks,
-  deleteProductionTask
+  deleteProductionTask,
+  recordFinishedGoods
 } from '../services/productionService';
 import { CreateProductionModal } from '../components/CreateProductionModal';
 import { ProductionDetailDrawer } from '../components/ProductionDetailDrawer';
@@ -30,22 +39,28 @@ export const ProductionListPage = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
+  const [activeTab, setActiveTab] = useState('requests'); // 'requests', 'store_received', 'output_damage'
 
   // Modals & Drawers
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [drawerInitialTab, setDrawerInitialTab] = useState('stage1');
+
+  // Record Output & Shortage Report Modal
+  const [outputModalTask, setOutputModalTask] = useState(null);
+  const [finishedQtyInput, setFinishedQtyInput] = useState(0);
+  const [rejectedQtyInput, setRejectedQtyInput] = useState(0);
+  const [shortageReason, setShortageReason] = useState('');
+  const [outputNotes, setOutputNotes] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Fetch Production Tasks
   const fetchTasks = useCallback(async () => {
     try {
       setLoading(true);
       const res = await getAllProductionTasks({
-        search: searchTerm,
-        status: statusFilter,
-        priority: priorityFilter
+        search: searchTerm
       });
       if (res && res.data) {
         setTasks(res.data);
@@ -59,7 +74,7 @@ export const ProductionListPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, statusFilter, priorityFilter]);
+  }, [searchTerm]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -69,8 +84,9 @@ export const ProductionListPage = () => {
   }, [fetchTasks]);
 
   // Open Details Drawer
-  const handleOpenDrawer = (taskId) => {
+  const handleOpenDrawer = (taskId, stageTab = 'stage1') => {
     setSelectedTaskId(taskId);
+    setDrawerInitialTab(stageTab);
     setIsDrawerOpen(true);
   };
 
@@ -96,51 +112,63 @@ export const ProductionListPage = () => {
     }
   };
 
-  // KPI Calculations
+  // Save Output & Shortage Report
+  const handleSaveOutputAndShortage = async (e) => {
+    e.preventDefault();
+    if (!outputModalTask) return;
+    try {
+      setActionLoading(true);
+      const fQty = parseInt(finishedQtyInput, 10) || 0;
+      const rQty = parseInt(rejectedQtyInput, 10) || 0;
+      const targetQty = parseInt(outputModalTask.proposed_quantity, 10) || 1;
+      const shortageCount = Math.max(0, targetQty - fQty);
+
+      let combinedNotes = outputNotes.trim();
+      if (shortageCount > 0 && shortageReason.trim()) {
+        combinedNotes = `[SHORTAGE REPORT: Short by ${shortageCount} units. Reason: ${shortageReason.trim()}] ${combinedNotes}`;
+      }
+
+      await recordFinishedGoods(outputModalTask.id, {
+        finished_quantity: fQty,
+        rejected_quantity: rQty,
+        notes: combinedNotes || null,
+        mark_completed: fQty >= targetQty
+      });
+
+      setOutputModalTask(null);
+      await fetchTasks();
+    } catch (err) {
+      console.error("Error recording output:", err);
+      alert(err.response?.data?.message || "Failed to record finished goods output.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Filter lists for each tab
   const totalOrders = tasks.length;
-  const inProduction = tasks.filter((t) => (t.status || '').toLowerCase() === 'in production').length;
-  const pendingMaterials = tasks.filter((t) =>
-    ['planned', 'material requested'].includes((t.status || '').toLowerCase())
-  ).length;
-  const completedOrders = tasks.filter((t) => (t.status || '').toLowerCase() === 'completed').length;
+
+  // Tab 1: Material Requests (Planned / Pending Store Issue)
+  const materialRequestsTasks = tasks.filter((t) =>
+    ['planned', 'material requested'].includes((t.status || 'planned').toLowerCase())
+  );
+
+  // Tab 2: Received from Store (Tracking items dispatched from store to production)
+  const storeReceivedTasks = tasks.filter((t) =>
+    ['material requested', 'material issued', 'in production', 'partially issued', 'planned'].includes((t.status || '').toLowerCase())
+  );
+
+  // Tab 3: Finished Goods & Damage/Shortage
+  const outputDamageTasks = tasks.filter((t) =>
+    ['in production', 'completed', 'material issued'].includes((t.status || '').toLowerCase())
+  );
+
   const totalFinishedGoods = tasks.reduce((sum, t) => sum + (parseInt(t.finished_quantity, 10) || 0), 0);
   const totalTargetGoods = tasks.reduce((sum, t) => sum + (parseInt(t.proposed_quantity, 10) || 0), 0);
-
-  // Status Badge Helper
-  const getStatusBadge = (st) => {
-    switch (st) {
-      case 'Completed':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-300';
-      case 'In Production':
-        return 'bg-blue-50 text-blue-700 border-blue-300';
-      case 'Quality Check':
-        return 'bg-purple-50 text-purple-700 border-purple-300';
-      case 'Material Issued':
-        return 'bg-indigo-50 text-indigo-700 border-indigo-300';
-      case 'Material Requested':
-        return 'bg-amber-50 text-amber-700 border-amber-300';
-      case 'Cancelled':
-        return 'bg-rose-50 text-rose-700 border-rose-300';
-      default:
-        return 'bg-slate-100 text-slate-700 border-slate-300';
-    }
-  };
-
-  const getPriorityBadge = (p) => {
-    switch (p) {
-      case 'Urgent':
-        return 'text-rose-700 bg-rose-50 border-rose-200';
-      case 'High':
-        return 'text-amber-700 bg-amber-50 border-amber-200';
-      case 'Low':
-        return 'text-slate-600 bg-slate-50 border-slate-200';
-      default:
-        return 'text-blue-700 bg-blue-50 border-blue-200';
-    }
-  };
+  const totalScrapCount = tasks.reduce((sum, t) => sum + (parseInt(t.rejected_quantity, 10) || 0), 0);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5 pb-12">
+    <div className="max-w-7xl mx-auto space-y-5 pb-12 text-xs">
       {/* 🌟 1. PAGE HEADER */}
       <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -149,13 +177,13 @@ export const ProductionListPage = () => {
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              Production & Assembly Work Orders
+              Production Management
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
-                {totalOrders} Orders
+                {totalOrders} Work Orders
               </span>
             </h1>
             <p className="text-xs text-gray-500">
-              Request components from store stock, assemble products, and track proposed vs finished output
+              Manufacturing lifecycle & floor operations
             </p>
           </div>
         </div>
@@ -169,59 +197,79 @@ export const ProductionListPage = () => {
         </button>
       </div>
 
-      {/* 🌟 2. KPI METRICS CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <Layers size={18} />
-          </div>
-          <div>
-            <span className="text-gray-500 text-[11px] font-medium block">Total Work Orders</span>
-            <span className="text-lg font-bold text-gray-900 leading-tight">{totalOrders}</span>
-          </div>
-        </div>
+      {/* 🌟 2. THREE SLEEK HORIZONTAL TABS */}
+      <div className="flex items-center gap-1 bg-white p-1.5 rounded-2xl border border-gray-200 shadow-sm overflow-x-auto">
+        {/* Tab 1: Material Requests */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('requests')}
+          className={`flex-1 min-w-[200px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'requests'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+        >
+          <ClipboardList size={15} />
+          <span>1. Material Requests</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${activeTab === 'requests'
+                ? 'bg-white/20 text-white'
+                : 'bg-slate-200/70 text-slate-700'
+              }`}
+          >
+            {materialRequestsTasks.length}
+          </span>
+        </button>
 
-        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Boxes size={18} />
-          </div>
-          <div>
-            <span className="text-gray-500 text-[11px] font-medium block">Pending Store Issue</span>
-            <span className="text-lg font-bold text-amber-700 leading-tight">{pendingMaterials}</span>
-          </div>
-        </div>
+        {/* Tab 2: Received from Store */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('store_received')}
+          className={`flex-1 min-w-[200px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'store_received'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+        >
+          <Truck size={15} />
+          <span>2. Received from Store</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${activeTab === 'store_received'
+                ? 'bg-white/20 text-white'
+                : 'bg-slate-200/70 text-slate-700'
+              }`}
+          >
+            {storeReceivedTasks.length}
+          </span>
+        </button>
 
-        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-            <Cpu size={18} />
-          </div>
-          <div>
-            <span className="text-gray-500 text-[11px] font-medium block">In Active Assembly</span>
-            <span className="text-lg font-bold text-indigo-700 leading-tight">{inProduction}</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <Package size={18} />
-          </div>
-          <div>
-            <span className="text-gray-500 text-[11px] font-medium block">Finished Goods Produced</span>
-            <span className="text-lg font-bold text-emerald-700 leading-tight">
-              {totalFinishedGoods} <span className="text-xs font-normal text-gray-400">/ {totalTargetGoods}</span>
-            </span>
-          </div>
-        </div>
+        {/* Tab 3: Finished Goods & Damage Report */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('output_damage')}
+          className={`flex-1 min-w-[220px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'output_damage'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+        >
+          <Package size={15} />
+          <span>3. Finished Goods & Damage Report</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${activeTab === 'output_damage'
+                ? 'bg-white/20 text-white'
+                : 'bg-slate-200/70 text-slate-700'
+              }`}
+          >
+            {totalFinishedGoods} / {totalTargetGoods}
+          </span>
+        </button>
       </div>
 
       {/* 🌟 3. SEARCH & FILTERS BAR */}
-      <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-        {/* Search Input with Clear Button */}
+      <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search task ID, product name, technician..."
+            placeholder="Search by Task ID (e.g. PRD-001), product name, project in-charge..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-9 py-2 text-xs text-gray-900 font-medium bg-slate-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white placeholder:text-gray-400 transition"
@@ -231,198 +279,518 @@ export const ProductionListPage = () => {
               type="button"
               onClick={() => setSearchTerm('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-200/60 transition cursor-pointer"
-              title="Clear search"
             >
               <X size={13} />
             </button>
           )}
         </div>
-
-        {/* Status & Priority Dropdowns */}
-        <div className="flex items-center gap-2 shrink-0">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs bg-slate-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 font-medium cursor-pointer"
-          >
-            <option value="">All Statuses</option>
-            <option value="Planned">Planned</option>
-            <option value="Material Requested">Material Requested</option>
-            <option value="Material Issued">Material Issued</option>
-            <option value="In Production">In Production</option>
-            <option value="Quality Check">Quality Check</option>
-            <option value="Completed">Completed</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
-
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="text-xs bg-slate-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 font-medium cursor-pointer"
-          >
-            <option value="">All Priorities</option>
-            <option value="Urgent">🔴 Urgent</option>
-            <option value="High">🟠 High</option>
-            <option value="Medium">🔵 Medium</option>
-            <option value="Low">🟢 Low</option>
-          </select>
-        </div>
       </div>
 
-      {/* 🌟 4. PRODUCTION TASKS DATA TABLE */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse table-fixed">
-            <thead className="bg-slate-50 text-gray-600 font-bold uppercase tracking-wider text-[10px] border-b border-gray-200">
-              <tr>
-                <th className="py-3.5 px-3 w-[6%] text-center">#</th>
-                <th className="py-3.5 px-3 w-[12%]">Task ID</th>
-                <th className="py-3.5 px-3 w-[26%]">Product / Title</th>
-                <th className="py-3.5 px-3 w-[18%]">Progress / Output</th>
-                <th className="py-3.5 px-3 w-[12%]">Status</th>
-                <th className="py-3.5 px-3 w-[8%] text-center">Priority</th>
-                <th className="py-3.5 px-3 w-[10%]">Assigned</th>
-                <th className="py-3.5 px-3 w-[8%] text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-gray-700">
-              {loading ? (
-                <tr>
-                  <td colSpan="8" className="py-12 text-center text-gray-400">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                      <p className="font-medium text-xs">Loading production work orders...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : tasks.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="py-12 text-center text-gray-400">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Cpu className="w-8 h-8 text-gray-300" />
-                      <p className="font-semibold text-gray-600">No production work orders found</p>
-                      <p className="text-[11px] text-gray-400">
-                        {searchTerm || statusFilter || priorityFilter
-                          ? 'Try clearing your filters'
-                          : 'Click "+ New Work Order" above to create your first production task'}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                tasks.map((t, idx) => {
-                  const proposed = parseInt(t.proposed_quantity, 10) || 1;
-                  const finished = parseInt(t.finished_quantity, 10) || 0;
-                  const percent = Math.min(100, Math.round((finished / proposed) * 100));
-
-                  return (
+      {/* 🌟 4. TAB 1 CONTENT: MATERIAL REQUESTS (STORE REQUISITIONS) */}
+      {activeTab === 'requests' && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          {loading ? (
+            <div className="p-10 flex flex-col items-center justify-center gap-2 text-gray-400">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+              <p className="font-medium text-xs">Loading material requests...</p>
+            </div>
+          ) : materialRequestsTasks.length === 0 ? (
+            <div className="p-10 text-center text-gray-400 space-y-2">
+              <ClipboardList className="w-10 h-10 mx-auto text-gray-300" />
+              <p className="text-sm font-bold text-gray-700">No Pending Material Requests</p>
+              <p className="text-xs text-gray-400">All created production orders have been processed or none are pending.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                    <th className="py-3 px-4">Task ID & Date</th>
+                    <th className="py-3 px-4">Finished Product</th>
+                    <th className="py-3 px-4 text-center">Proposed Goods Quantity</th>
+                    <th className="py-3 px-4 text-center">BOM Items Requested</th>
+                    <th className="py-3 px-4">Project In-charge</th>
+                    <th className="py-3 px-4">Store Request Status</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {materialRequestsTasks.map((task) => (
                     <tr
-                      key={t.id}
-                      onClick={() => handleOpenDrawer(t.id)}
-                      className="hover:bg-slate-50/90 transition-colors cursor-pointer"
+                      key={task.id}
+                      onClick={() => handleOpenDrawer(task.id, 'stage1')}
+                      className="hover:bg-amber-50/30 transition-colors cursor-pointer"
                     >
-                      {/* Index */}
-                      <td className="py-3.5 px-3 text-center font-mono text-gray-400 text-[11px]">
-                        {idx + 1}
-                      </td>
-
-                      {/* Task ID */}
-                      <td className="py-3.5 px-3 truncate">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200/80 font-mono font-bold text-xs">
-                          <Hash className="w-3 h-3 text-blue-500" />
-                          {t.task_id}
+                      {/* Task ID & Date */}
+                      <td className="py-3.5 px-4">
+                        <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-xs">
+                          {task.task_id}
+                        </span>
+                        <span className="text-[10px] text-gray-400 block mt-1">
+                          {task.start_date ? new Date(task.start_date).toLocaleDateString() : 'No date'}
                         </span>
                       </td>
 
-                      {/* Product Name & Title */}
-                      <td className="py-3.5 px-3 truncate">
-                        <div className="font-bold text-gray-900 truncate text-xs">{t.product_name}</div>
-                        <div className="text-[11px] text-gray-500 truncate">{t.task_title || `Build ${proposed} units`}</div>
+                      {/* Finished Product (Clean column) */}
+                      <td className="py-3.5 px-4 font-bold text-gray-900 text-xs">
+                        {task.product_name}
                       </td>
 
-                      {/* Output Progress */}
-                      <td className="py-3.5 px-3">
-                        <div className="space-y-1">
-                          <div className="flex justify-between items-center text-[10px] font-bold">
-                            <span className="text-gray-800">
-                              {finished} / {proposed} Units
-                            </span>
-                            <span className={percent >= 100 ? 'text-emerald-700' : 'text-blue-700'}>
-                              {percent}%
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all duration-300 ${
-                                percent >= 100 ? 'bg-emerald-500' : 'bg-blue-600'
-                              }`}
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Status Badge */}
-                      <td className="py-3.5 px-3 truncate">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border truncate ${getStatusBadge(t.status)}`}>
-                          {t.status}
+                      {/* Proposed Goods Quantity (Clean column) */}
+                      <td className="py-3.5 px-4 text-center font-bold text-slate-800 text-xs">
+                        <span className="bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 inline-block">
+                          {task.proposed_quantity} Units
                         </span>
                       </td>
 
-                      {/* Priority */}
-                      <td className="py-3.5 px-3 text-center">
-                        <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border ${getPriorityBadge(t.priority)}`}>
-                          {t.priority}
+                      {/* BOM Items Requested */}
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="font-bold text-indigo-900 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200 inline-block text-xs">
+                          {task.total_items || 0} Components ({task.total_required_qty || 0} Total Qty)
                         </span>
                       </td>
 
-                      {/* Assigned & Date */}
-                      <td className="py-3.5 px-3 truncate">
-                        <div className="font-semibold text-gray-900 truncate">{t.assigned_to || 'Unassigned'}</div>
-                        <div className="text-[10px] text-gray-400">
-                          {t.due_date ? `Due: ${new Date(t.due_date).toLocaleDateString('en-IN')}` : 'No due date'}
-                        </div>
+                      {/* Project In-charge */}
+                      <td className="py-3.5 px-4 font-medium text-gray-800">
+                        {task.assigned_to || 'Unassigned'}
+                      </td>
+
+                      {/* Store Request Status */}
+                      <td className="py-3.5 px-4">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-300">
+                          <Clock size={11} /> Pending Store Dispatch
+                        </span>
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3.5 px-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => handleOpenDrawer(t.id)}
-                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
-                            title="View / Manage Work Order"
+                            type="button"
+                            onClick={() => handleOpenDrawer(task.id, 'stage1')}
+                            className="px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
                           >
-                            <Eye size={14} />
+                            View Request
                           </button>
                           <button
-                            onClick={() => handleDelete(t)}
-                            className="p-1.5 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                            title="Delete Work Order"
+                            type="button"
+                            onClick={() => handleDelete(task)}
+                            className="p-1 text-gray-400 hover:text-rose-600 rounded-lg transition"
+                            title="Delete"
                           >
                             <Trash2 size={14} />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
-      {/* 🌟 5. CREATE WORK ORDER MODAL */}
+      {/* 🌟 5. TAB 2 CONTENT: RECEIVED FROM STORE (DISPATCH TRACKING) */}
+      {activeTab === 'store_received' && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          {loading ? (
+            <div className="p-10 flex flex-col items-center justify-center gap-2 text-gray-400">
+              <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+              <p className="font-medium text-xs">Loading store dispatch status...</p>
+            </div>
+          ) : storeReceivedTasks.length === 0 ? (
+            <div className="p-10 text-center text-gray-400 space-y-2">
+              <Truck className="w-10 h-10 mx-auto text-gray-300" />
+              <p className="text-sm font-bold text-gray-700">No Store Dispatches</p>
+              <p className="text-xs text-gray-400">No active work orders currently waiting or received from Store.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                    <th className="py-3 px-4">Task ID & Date</th>
+                    <th className="py-3 px-4">Finished Product</th>
+                    <th className="py-3 px-4 text-center">Proposed Goods Quantity</th>
+                    <th className="py-3 px-4 text-center">Items Received vs Requested</th>
+                    <th className="py-3 px-4">Store Dispatch Status</th>
+                    <th className="py-3 px-4">Project In-charge</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {storeReceivedTasks.map((task) => {
+                    const reqQty = parseFloat(task.total_required_qty) || 0;
+                    const issQty = parseFloat(task.total_issued_qty) || 0;
+                    const isFullyDispatched = issQty >= reqQty && reqQty > 0;
+                    const dispatchPercent = reqQty > 0 ? Math.min(100, Math.round((issQty / reqQty) * 100)) : 0;
+
+                    return (
+                      <tr
+                        key={task.id}
+                        onClick={() => handleOpenDrawer(task.id, 'stage2')}
+                        className="hover:bg-indigo-50/30 transition-colors cursor-pointer"
+                      >
+                        <td className="py-3.5 px-4">
+                          <span className="font-mono font-bold text-blue-700 text-xs bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                            {task.task_id}
+                          </span>
+                          <span className="text-[10px] text-gray-400 block mt-1">
+                            {task.start_date ? new Date(task.start_date).toLocaleDateString() : 'No date'}
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-4 font-bold text-gray-900 text-xs">
+                          {task.product_name}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center font-bold text-slate-800 text-xs">
+                          <span className="bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 inline-block">
+                            {task.proposed_quantity} Units
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center">
+                          <div className="inline-block space-y-1">
+                            <span className="font-bold text-slate-800 text-xs">
+                              {issQty} / {reqQty} units ({dispatchPercent}%)
+                            </span>
+                            <div className="w-24 bg-gray-200 rounded-full h-1.5 mx-auto overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${isFullyDispatched ? 'bg-emerald-500' : 'bg-indigo-600'
+                                  }`}
+                                style={{ width: `${dispatchPercent}%` }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          {isFullyDispatched ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300">
+                              <Check size={11} /> Fully Received
+                            </span>
+                          ) : issQty > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-300">
+                              Partially Received
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-300">
+                              Awaiting Dispatch
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4 font-medium text-gray-800">
+                          {task.assigned_to || 'Unassigned'}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDrawer(task.id, 'stage2')}
+                            className="px-2.5 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition"
+                          >
+                            View Items
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 🌟 6. TAB 3 CONTENT: FINISHED GOODS & DAMAGE / SHORTAGE REPORT */}
+      {activeTab === 'output_damage' && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          {loading ? (
+            <div className="p-10 flex flex-col items-center justify-center gap-2 text-gray-400">
+              <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+              <p className="font-medium text-xs">Loading output records...</p>
+            </div>
+          ) : outputDamageTasks.length === 0 ? (
+            <div className="p-10 text-center text-gray-400 space-y-2">
+              <Package className="w-10 h-10 mx-auto text-gray-300" />
+              <p className="text-sm font-bold text-gray-700">No Production Outputs Logged</p>
+              <p className="text-xs text-gray-400">When work orders enter production, output and damage reports will appear here.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                    <th className="py-3 px-4">Task ID & Date</th>
+                    <th className="py-3 px-4">Finished Product</th>
+                    <th className="py-3 px-4 text-center">Proposed Goods Quantity</th>
+                    <th className="py-3 px-4 text-center">Finished Goods Produced</th>
+                    <th className="py-3 px-4 text-center">Damaged / Defect Qty</th>
+                    <th className="py-3 px-4">Shortage / Variance Status</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {outputDamageTasks.map((task) => {
+                    const proposed = parseInt(task.proposed_quantity, 10) || 1;
+                    const finished = parseInt(task.finished_quantity, 10) || 0;
+                    const rejected = parseInt(task.rejected_quantity, 10) || 0;
+                    const shortage = Math.max(0, proposed - finished);
+                    const isFullyCompleted = finished >= proposed;
+
+                    return (
+                      <tr
+                        key={task.id}
+                        onClick={() => handleOpenDrawer(task.id, 'stage3')}
+                        className="hover:bg-emerald-50/30 transition-colors cursor-pointer"
+                      >
+                        <td className="py-3.5 px-4">
+                          <span className="font-mono font-bold text-blue-700 text-xs bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                            {task.task_id}
+                          </span>
+                          <span className="text-[10px] text-gray-400 block mt-1">
+                            {task.start_date ? new Date(task.start_date).toLocaleDateString() : 'No date'}
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-4 font-bold text-gray-900 text-xs">
+                          {task.product_name}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center font-bold text-slate-800 text-xs">
+                          <span className="bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 inline-block">
+                            {proposed} Units
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 inline-block text-xs">
+                            {finished} Units
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-4 text-center">
+                          {rejected > 0 ? (
+                            <span className="font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-xs">
+                              {rejected} Units
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-[11px]">0</span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          {isFullyCompleted ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300">
+                              <Check size={11} /> 100% Target Met
+                            </span>
+                          ) : shortage > 0 ? (
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-300">
+                                <AlertTriangle size={11} className="text-amber-600" />
+                                Shortage: {shortage} Units
+                              </span>
+                              <span className="text-[10px] text-gray-500 block">Reported to Store</span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-gray-400">In Production</span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOutputModalTask(task);
+                              setFinishedQtyInput(finished || proposed);
+                              setRejectedQtyInput(rejected);
+                              setShortageReason('');
+                              setOutputNotes(task.notes || '');
+                            }}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition text-xs shadow-xs"
+                          >
+                            {isFullyCompleted ? 'Update Output' : '✨ Record Output'}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 🌟 7. RECORD OUTPUT & SHORTAGE REPORT MODAL */}
+      {outputModalTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95">
+            <div className="px-5 py-4 border-b border-gray-200 bg-slate-50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Package className="w-5 h-5 text-emerald-600" />
+                <div>
+                  <h3 className="font-bold text-gray-900 text-xs">Record Finished Goods & Shortage Report</h3>
+                  <p className="text-[10px] text-gray-500 font-mono">Task ID: {outputModalTask.task_id}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setOutputModalTask(null)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveOutputAndShortage} className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
+                <p className="font-bold text-emerald-900 text-xs">{outputModalTask.product_name}</p>
+                <p className="text-[11px] text-emerald-700">
+                  Target Batch Quantity: <strong>{outputModalTask.proposed_quantity} Units</strong>
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      Finished Goods Output <span className="text-emerald-600 font-normal">(Store Inward)</span>
+                    </label>
+                    <span className="text-[10px] text-gray-400 font-bold">
+                      Max: {outputModalTask.proposed_quantity} Units
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    max={outputModalTask.proposed_quantity}
+                    required
+                    value={finishedQtyInput}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const proposed = parseInt(outputModalTask.proposed_quantity, 10) || 1;
+                      if (val === '') {
+                        setFinishedQtyInput('');
+                        return;
+                      }
+                      const parsed = parseInt(val, 10);
+                      const clamped = isNaN(parsed) ? 0 : Math.max(0, Math.min(proposed, parsed));
+                      setFinishedQtyInput(clamped);
+                      // Auto-calculate damaged/scrap as the remaining difference
+                      const autoDamage = Math.max(0, proposed - clamped);
+                      setRejectedQtyInput(autoDamage);
+                    }}
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-bold text-gray-900 text-center focus:ring-2 focus:ring-emerald-500 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      Damaged / Defect Qty <span className="text-rose-500 font-normal">(Scrapped)</span>
+                    </label>
+                    <span className="text-[10px] text-rose-500 font-bold">
+                      Max: {Math.max(0, (parseInt(outputModalTask.proposed_quantity, 10) || 0) - (parseInt(finishedQtyInput, 10) || 0))} Units
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    max={Math.max(0, (parseInt(outputModalTask.proposed_quantity, 10) || 0) - (parseInt(finishedQtyInput, 10) || 0))}
+                    value={rejectedQtyInput}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const proposed = parseInt(outputModalTask.proposed_quantity, 10) || 1;
+                      const currentFinished = parseInt(finishedQtyInput, 10) || 0;
+                      const maxDamage = Math.max(0, proposed - currentFinished);
+                      if (val === '') {
+                        setRejectedQtyInput('');
+                        return;
+                      }
+                      const parsed = parseInt(val, 10);
+                      const clamped = isNaN(parsed) ? 0 : Math.max(0, Math.min(maxDamage, parsed));
+                      setRejectedQtyInput(clamped);
+                    }}
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-bold text-rose-700 text-center focus:ring-2 focus:ring-rose-500 text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Shortage Alert & Reason if Finished < Proposed */}
+              {parseInt(finishedQtyInput, 10) < parseInt(outputModalTask.proposed_quantity, 10) && (
+                <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl space-y-2">
+                  <div className="flex items-center gap-1.5 text-amber-900 font-bold">
+                    <ShieldAlert size={15} className="text-amber-600" />
+                    <span>
+                      Shortage Warning: {parseInt(outputModalTask.proposed_quantity, 10) - (parseInt(finishedQtyInput, 10) || 0)} Units Short of Target
+                    </span>
+                  </div>
+                  <label className="block text-[11px] font-semibold text-amber-800">
+                    Reason for Shortage / Defect (Reported to Store & Management) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 2 PCBA boards failed QC voltage test during assembly"
+                    value={shortageReason}
+                    onChange={(e) => setShortageReason(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-gray-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">Production / QC Remarks</label>
+                <textarea
+                  rows={2}
+                  placeholder="Serial numbers, batch testing, or general QC remarks..."
+                  value={outputNotes}
+                  onChange={(e) => setOutputNotes(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 text-xs focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setOutputModalTask(null)}
+                  disabled={actionLoading}
+                  className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold text-xs transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition disabled:opacity-50"
+                >
+                  {actionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                  <span>Save & Credit Finished Stock in Store</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 8. CREATE PRODUCTION MODAL */}
       <CreateProductionModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onSuccess={fetchTasks}
+        onSuccess={() => {
+          fetchTasks();
+          setIsCreateOpen(false);
+        }}
       />
 
-      {/* 🌟 6. PRODUCTION DETAIL DRAWER */}
+      {/* 🌟 9. PRODUCTION DETAIL DRAWER */}
       <ProductionDetailDrawer
         isOpen={isDrawerOpen}
         taskId={selectedTaskId}
+        initialTab={drawerInitialTab}
         onClose={handleCloseDrawer}
         onRefresh={fetchTasks}
       />

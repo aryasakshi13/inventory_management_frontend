@@ -60,6 +60,15 @@ export const issueMaterialsToProduction = async (id, payload = {}) => {
   return response.data;
 };
 
+// Reject Production Requisition from Store
+export const rejectProductionRequisition = async (id, payload = {}) => {
+  const response = await axios.post(`${BASE_URL}/${id}/reject-requisition`, payload, {
+    withCredentials: true,
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.data;
+};
+
 // Record Finished Goods & Output
 export const recordFinishedGoods = async (id, payload) => {
   const response = await axios.post(`${BASE_URL}/${id}/record-output`, payload, {

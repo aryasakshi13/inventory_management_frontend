@@ -18,9 +18,9 @@ export const AddSalesOrderModal = ({
   // Available clients fetched with role === 'client' strictly
   const [availableClients, setAvailableClients] = useState([]);
 
-  // Project Incharge State
+  // Project Incharge State (Default NA for factory products / direct sales)
   const [projectIncharges, setProjectIncharges] = useState([]);
-  const [selectedProjectIncharge, setSelectedProjectIncharge] = useState('');
+  const [selectedProjectIncharge, setSelectedProjectIncharge] = useState('NA');
   const [loadingIncharges, setLoadingIncharges] = useState(false);
 
   // Products Dropdown State
@@ -335,10 +335,6 @@ export const AddSalesOrderModal = ({
       newErrors.client = "Please select a client.";
     }
 
-    if (!selectedProjectIncharge) {
-      newErrors.projectIncharge = "Please select a Project Incharge / Engineer.";
-    }
-
     // Project Name Validation
     const cleanProject = projectName.trim();
     if (!cleanProject) {
@@ -405,6 +401,13 @@ export const AddSalesOrderModal = ({
           break;
         }
         seenProducts.add(key);
+
+        // 0-Stock check for finished products
+        const matchedProd = products.find((p) => (p.product_name || '').toLowerCase().trim() === key);
+        if (matchedProd && Number(matchedProd.store_stock || 0) <= 0) {
+          newErrors.items = `Cannot create Sales Order: Product "${prodName}" has 0 finished stock in Store (Out of Stock). Please produce it in Production first.`;
+          break;
+        }
       }
     }
 
@@ -507,7 +510,7 @@ export const AddSalesOrderModal = ({
           <div className="bg-blue-50/60 p-4 border border-blue-200 rounded-xl space-y-2 shadow-xs">
             <div className="flex items-center gap-2 text-xs font-bold text-blue-900 uppercase tracking-wider">
               <UserCheck size={16} className="text-blue-600" />
-              <span>Choose Project Incharge / Engineer *</span>
+              <span>Project Incharge / Engineer</span>
             </div>
             <select
               value={selectedProjectIncharge}
@@ -515,15 +518,11 @@ export const AddSalesOrderModal = ({
                 setSelectedProjectIncharge(e.target.value);
                 if (errors.projectIncharge) setErrors((prev) => ({ ...prev, projectIncharge: null }));
               }}
-              className={`w-full px-3 py-2.5 border rounded-lg text-xs bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition ${
-                errors.projectIncharge ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
-              } ${selectedProjectIncharge ? 'text-gray-900 font-medium' : 'text-gray-500'}`}
-              required
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-xs bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition text-gray-900 font-medium cursor-pointer"
             >
+              <option value="NA">NA</option>
               <option value="" className="text-gray-500">
-                {loadingIncharges
-                  ? "Loading Project Incharges..."
-                  : "-- Choose Project Incharge / Engineer --"}
+                {loadingIncharges ? "Loading Incharges..." : "-- Select Incharge --"}
               </option>
 
               {!loadingIncharges && projectIncharges.length > 0 ? (
@@ -548,11 +547,6 @@ export const AddSalesOrderModal = ({
                 </option>
               ) : null}
             </select>
-            {errors.projectIncharge && (
-              <p className="text-[11px] text-rose-600 flex items-center gap-1 font-medium">
-                <AlertCircle size={12} /> {errors.projectIncharge}
-              </p>
-            )}
           </div>
 
           {/* Section 1: Client Selection & Information */}
@@ -1021,6 +1015,10 @@ export const AddSalesOrderModal = ({
                           productName: selectedName,
                           productId: matched ? matched.id : ''
                         });
+                        // Automatically set Project Incharge to NA for manufactured / direct products
+                        if (selectedName) {
+                          setSelectedProjectIncharge('NA');
+                        }
                       }}
                       required
                       className="w-full text-black p-2 border border-gray-300 rounded-md text-xs bg-white focus:ring-2 focus:ring-blue-500"
@@ -1029,8 +1027,12 @@ export const AddSalesOrderModal = ({
                         {loadingProducts ? "Loading products..." : "-- Select Product --"}
                       </option>
                       {products.map((p) => (
-                        <option key={p.id} value={p.product_name}>
-                          {p.product_name}
+                        <option
+                          key={p.id}
+                          value={p.product_name}
+                          className="text-gray-900"
+                        >
+                          {p.product_name} (Stock: {p.store_stock ?? 0})
                         </option>
                       ))}
                       {/* Preserve custom name if bulk uploaded and not in list */}
@@ -1065,6 +1067,20 @@ export const AddSalesOrderModal = ({
                       <Trash2 size={14} />
                     </button>
                   </div>
+
+                  {/* 0-Stock Warning Banner under row */}
+                  {item.productName && (() => {
+                    const matched = products.find(p => (p.product_name || '').toLowerCase().trim() === (item.productName || '').toLowerCase().trim());
+                    if (matched && Number(matched.store_stock || 0) <= 0) {
+                      return (
+                        <div className="col-span-12 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-lg text-[11px] text-rose-700 font-semibold flex items-center gap-1.5">
+                          <AlertCircle size={13} className="text-rose-600 shrink-0" />
+                          <span>Finished Stock is <strong>0 in Store</strong>. Is product ki pehle <strong>Production</strong> karein, tabhi Sales Order add ho sakta hai.</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               ))}
             </div>
