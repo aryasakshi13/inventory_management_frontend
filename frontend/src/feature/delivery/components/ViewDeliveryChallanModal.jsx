@@ -277,7 +277,11 @@ export const ViewDeliveryChallanModal = ({ isOpen, onClose, challan }) => {
           <div className="space-y-2">
             <div className="flex flex-wrap justify-between items-center gap-2">
               <h3 className="font-bold text-gray-700 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                <span>Order BOM Items & Delivery Breakdown ({items.length} items)</span>
+                <span>
+                  {challan.delivery_type === 'in_house' || challan.receipt_status === 'Direct Delivery'
+                    ? `Order Manufactured Products & Delivery Breakdown (${items.length} products)`
+                    : `Order BOM Items & Delivery Breakdown (${items.length} items)`}
+                </span>
               </h3>
               {challan.order_remaining_qty > 0 ? (
                 <span className="text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
@@ -295,7 +299,11 @@ export const ViewDeliveryChallanModal = ({ isOpen, onClose, challan }) => {
                 <thead className="bg-gray-100 text-gray-700 font-bold uppercase text-[10px] border-b border-gray-200">
                   <tr>
                     <th className="py-2.5 px-3 w-8 text-center">#</th>
-                    <th className="py-2.5 px-3 min-w-[160px]">Item Description</th>
+                    <th className="py-2.5 px-3 min-w-[160px]">
+                      {challan.delivery_type === 'in_house' || challan.receipt_status === 'Direct Delivery'
+                        ? 'Product Description'
+                        : 'Item Description'}
+                    </th>
                     <th className="py-2.5 px-3 w-16 text-center">Unit</th>
                     <th className="py-2.5 px-3 w-20 text-right">Order Qty</th>
                     <th className="py-2.5 px-3 w-20 text-right">Prior Sent</th>

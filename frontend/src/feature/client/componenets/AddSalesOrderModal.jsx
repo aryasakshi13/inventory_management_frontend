@@ -578,9 +578,8 @@ export const AddSalesOrderModal = ({
                   <button
                     type="button"
                     onClick={() => setShowDropdown(!showDropdown)}
-                    className={`w-full p-2.5 border text-black rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 flex justify-between items-center ${
-                      errors.client ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
-                    }`}
+                    className={`w-full p-2.5 border text-black rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 flex justify-between items-center ${errors.client ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
+                      }`}
                   >
                     <span className={selectedClientData ? 'text-black font-medium' : 'text-gray-400'}>
                       {selectedClientData ? selectedClientData.companyName : '-- Choose Client --'}
@@ -695,9 +694,8 @@ export const AddSalesOrderModal = ({
                     }
                   }}
                   required
-                  className={`w-full text-black p-2.5 border rounded-lg text-xs bg-white ${
-                    errors.projectName ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
-                  }`}
+                  className={`w-full text-black p-2.5 border rounded-lg text-xs bg-white ${errors.projectName ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
+                    }`}
                 />
                 {errors.projectName && (
                   <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1 font-medium">
@@ -721,9 +719,8 @@ export const AddSalesOrderModal = ({
                       setErrors((prev) => ({ ...prev, siteContactPerson: null }));
                     }
                   }}
-                  className={`w-full text-black p-2.5 border rounded-lg text-xs bg-white ${
-                    errors.siteContactPerson ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
-                  }`}
+                  className={`w-full text-black p-2.5 border rounded-lg text-xs bg-white ${errors.siteContactPerson ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
+                    }`}
                 />
                 {errors.siteContactPerson && (
                   <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1 font-medium">
@@ -750,9 +747,8 @@ export const AddSalesOrderModal = ({
                       setErrors((prev) => ({ ...prev, siteContactNumber: null }));
                     }
                   }}
-                  className={`w-full text-black p-2.5 border rounded-lg text-xs bg-white ${
-                    errors.siteContactNumber ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
-                  }`}
+                  className={`w-full text-black p-2.5 border rounded-lg text-xs bg-white ${errors.siteContactNumber ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
+                    }`}
                 />
                 {errors.siteContactNumber && (
                   <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1 font-medium">
@@ -793,9 +789,8 @@ export const AddSalesOrderModal = ({
                   }
                 }}
                 required
-                className={`w-full text-black p-2.5 border rounded-lg text-xs bg-white ${
-                  errors.poNumber ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
-                }`}
+                className={`w-full text-black p-2.5 border rounded-lg text-xs bg-white ${errors.poNumber ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
+                  }`}
               />
               {errors.poNumber && (
                 <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1 font-medium">
@@ -812,7 +807,7 @@ export const AddSalesOrderModal = ({
                 onClick={(e) => {
                   try {
                     e.target.showPicker();
-                  } catch (err) {}
+                  } catch (err) { }
                 }}
                 onChange={(e) => {
                   const newPoDate = e.target.value;
@@ -835,15 +830,14 @@ export const AddSalesOrderModal = ({
                 onClick={(e) => {
                   try {
                     e.target.showPicker();
-                  } catch (err) {}
+                  } catch (err) { }
                 }}
                 onChange={(e) => {
                   setExpectedDeliveryDate(e.target.value);
                   if (errors.expectedDeliveryDate) setErrors((prev) => ({ ...prev, expectedDeliveryDate: null }));
                 }}
-                className={`w-full text-black p-2.5 border rounded-lg text-xs cursor-pointer bg-white ${
-                  errors.expectedDeliveryDate ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
-                }`}
+                className={`w-full text-black p-2.5 border rounded-lg text-xs cursor-pointer bg-white ${errors.expectedDeliveryDate ? 'border-rose-400 bg-rose-50/20' : 'border-gray-300'
+                  }`}
               />
               {errors.expectedDeliveryDate && (
                 <p className="text-[11px] text-rose-600 mt-1 flex items-center gap-1 font-medium">

@@ -13,7 +13,9 @@ export const SalesOrderTable = ({
   onStatusChange,
   userRole,
 }) => {
-  const isStoreManager = userRole?.trim().toLowerCase() === 'store manager';
+  const normalizedRole = (userRole || '').trim().toLowerCase();
+  const canConfirmOrder = ['store manager', 'admin', 'super admin'].includes(normalizedRole);
+  const isStoreManager = normalizedRole === 'store manager';
   const [activePopup, setActivePopup] = useState(null);
   const popupRef = useRef(null);
 
@@ -142,7 +144,7 @@ export const SalesOrderTable = ({
                     </td>
 
                     <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      {isStoreManager && order.status === 'Pending' ? (
+                      {canConfirmOrder && order.status === 'Pending' ? (
                         <select
                           value={order.status}
                           onChange={(e) => onStatusChange(order.Id, e.target.value)}

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Send, ArrowLeft, PackageCheck, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Send, ArrowLeft, PackageCheck, AlertCircle, Clock, CheckCircle2, Truck } from 'lucide-react';
 import { useDeliveryForm } from '../hooks/useDeliveryForm';
 import { fetchSalesOrders } from '../../client/services/salesOrderService';
 import { fetchAllBOMPreparations } from '../../bomPreparation/services/bomPreparationService';
-import { createDeliveryChallan, fetchOrderDispatchSummary } from '../services/deliveryService';
+import { createDeliveryChallan, fetchOrderDispatchSummary, getAllDeliveryChallans } from '../services/deliveryService';
 
 export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
   const [salesOrders, setSalesOrders] = useState([]);
@@ -13,7 +13,7 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
   const [orderItemsList, setOrderItemsList] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [loadingSummary, setLoadingSummary] = useState(false);
-  
+
   const {
     formData,
     items,
@@ -29,18 +29,20 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
     resetForm,
   } = useDeliveryForm();
 
-  // Fetch sales orders and filter to ONLY those with a prepared BOM and remaining balance
+  // Fetch sales orders and filter to ONLY those with remaining balance to deliver
   useEffect(() => {
     const loadSalesOrders = async () => {
       try {
         setLoadingOrders(true);
-        const [res, prepRes] = await Promise.all([
+        const [res, prepRes, challanRes] = await Promise.all([
           fetchSalesOrders(),
-          fetchAllBOMPreparations().catch(() => ({ data: [] }))
+          fetchAllBOMPreparations().catch(() => ({ data: [] })),
+          getAllDeliveryChallans().catch(() => ({ data: [] })),
         ]);
 
         const ordersList = res?.data ?? (Array.isArray(res) ? res : []);
         const prepsList = prepRes?.data ?? (Array.isArray(prepRes) ? prepRes : []);
+        const challanList = challanRes?.data ?? (Array.isArray(challanRes) ? challanRes : []);
 
         const prepMap = new Map();
         prepsList.forEach((p) => {
@@ -49,23 +51,48 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
           }
         });
 
-        // Filter to orders with prepared BOM
-        const preparedOrdersOnly = ordersList
+        // Set of Order IDs that are already 100% delivered
+        const fullyDeliveredOrderIds = new Set();
+        challanList.forEach((ch) => {
+          const ordId = Number(ch.order_id);
+          if (!ordId) return;
+          const totalOrd = Number(ch.total_ordered_qty || ch.order_total_ordered_qty || 0);
+          const cumDel = Number(ch.cumulative_delivered_qty ?? ch.total_delivered_qty ?? 0);
+          if (ch.status === 'Fully Delivered' || ch.status === 'Delivered' || (totalOrd > 0 && cumDel >= totalOrd)) {
+            fullyDeliveredOrderIds.add(ordId);
+          }
+        });
+
+        // Eligible for delivery:
+        // 1) Not already fully delivered (fullyDeliveredOrderIds)
+        // 2) Orders with prepared BOM (for site assembly) OR Confirmed in-house manufacturing orders
+        const eligibleOrders = ordersList
           .filter((ord) => {
             const ordId = Number(ord.Id || ord.id);
+            if (fullyDeliveredOrderIds.has(ordId)) {
+              return false; // Skip already 100% delivered sales orders
+            }
+
+            const isConfirmed = String(ord.status ?? ord.Status ?? '').trim().toLowerCase() === 'confirmed';
             const prep = prepMap.get(ordId);
-            return prep && Array.isArray(prep.items) && prep.items.length > 0;
+            const hasPreparedBOM = prep && Array.isArray(prep.items) && prep.items.length > 0;
+
+            const rawItems = Array.isArray(ord.items) ? ord.items : [];
+            const hasSiteAssembly = rawItems.some((item) => (item.fulfilment_mode || 'site_assembly') === 'site_assembly');
+            const isInHouseOnly = isConfirmed && (ord.is_in_house_manufacturing || (rawItems.length > 0 && !hasSiteAssembly));
+
+            return hasPreparedBOM || isInHouseOnly;
           })
           .map((ord) => {
             const ordId = Number(ord.Id || ord.id);
             const prep = prepMap.get(ordId);
             return {
               ...ord,
-              preparationId: prep.id,
+              preparationId: prep ? prep.id : null,
             };
           });
 
-        setSalesOrders(preparedOrdersOnly);
+        setSalesOrders(eligibleOrders);
       } catch (err) {
         console.error('Failed to load sales orders:', err);
       } finally {
@@ -209,6 +236,12 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
       vehicle_no: formData.vehicle_no || '',
       delivery_items: itemsToDispatch.map((item) => ({
         item_id: Number(item.item_id || item.product_id || item.id) || null,
+        product_id: Number(item.product_id || item.item_id || item.id) || null,
+        item_name: item.item_name || '',
+        product_name: item.item_name || '',
+        brand: item.brand || '',
+        unit: item.unit || 'Nos',
+        category: item.category || 'General',
         ordered_qty: Number(item.required_qty || item.ordered_qty) || 0,
         delivered_qty: Number(item.delivered_qty) || 0,
       })),
@@ -355,13 +388,12 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
-                  selectedOrderSummary.is_fully_fulfilled
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${selectedOrderSummary.is_fully_fulfilled
                     ? 'bg-emerald-100 text-emerald-800'
                     : selectedOrderSummary.total_dispatched_qty > 0
-                    ? 'bg-amber-100 text-amber-800'
-                    : 'bg-blue-100 text-blue-800'
-                }`}>
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-blue-100 text-blue-800'
+                  }`}>
                   {selectedOrderSummary.is_fully_fulfilled ? <CheckCircle2 size={13} /> : <Clock size={13} />}
                   {selectedOrderSummary.status}
                 </span>
@@ -491,8 +523,8 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
                             {!selectedOrderId
                               ? '-- Select Sales Order First --'
                               : orderItemsList.length === 0
-                              ? '-- No Prepared BOM Items Found --'
-                              : '-- Select Item to Dispatch --'}
+                                ? '-- No Prepared BOM Items Found --'
+                                : '-- Select Item to Dispatch --'}
                           </option>
 
                           {orderItemsList.map((ordItem, idxKey) => {
@@ -527,9 +559,8 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
 
                       {/* Warehouse Stock Available */}
                       <td className="py-2.5 px-3 text-right font-mono font-medium">
-                        <span className={`px-1.5 py-0.5 rounded text-[11px] ${
-                          stock <= 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800'
-                        }`}>
+                        <span className={`px-1.5 py-0.5 rounded text-[11px] ${stock <= 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800'
+                          }`}>
                           {stock} in stock
                         </span>
                       </td>
@@ -539,15 +570,23 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
                         <input
                           type="number"
                           min="0"
-                          max={balance || undefined}
+                          max={balance || 0}
                           placeholder="0"
+                          disabled={balance === 0}
                           value={item.delivered_qty}
                           onChange={(e) => updateItemRow(item.id, 'delivered_qty', e.target.value)}
                           className={`w-full bg-white border rounded p-1.5 text-right font-mono font-bold text-blue-600 focus:ring-1 ${
-                            isStockInsufficient ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-gray-300 focus:ring-blue-500'
+                            isStockInsufficient || Number(item.delivered_qty) > balance
+                              ? 'border-rose-500 bg-rose-50 text-rose-700'
+                              : 'border-gray-300 focus:ring-blue-500'
                           }`}
                         />
-                        {isStockInsufficient && (
+                        {Number(item.delivered_qty) > balance && (
+                          <div className="text-[10px] text-rose-600 font-medium mt-0.5 text-right">
+                            Exceeds Balance ({balance})
+                          </div>
+                        )}
+                        {isStockInsufficient && Number(item.delivered_qty) <= balance && (
                           <div className="text-[10px] text-rose-600 font-medium mt-0.5 text-right">
                             Exceeds Stock ({stock})
                           </div>

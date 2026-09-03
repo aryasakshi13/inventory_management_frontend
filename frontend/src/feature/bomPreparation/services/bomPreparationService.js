@@ -6,15 +6,26 @@ const BASE_URL = window.location.hostname === 'localhost'
     : "https://www.namami-infotech.com/inventory/api/bomPrepare";
 
 /**
- * Get confirmed sales orders
+ * Get confirmed sales orders (exclusively for site assembly; in-house manufacturing skips BOM preparation)
  */
 export const getConfirmedSalesOrders = async (params = {}) => {
     const response = await fetchSalesOrders(params);
     const orders = response?.data?.data ?? response?.data ?? response;
     const confirmedOrders = Array.isArray(orders)
-        ? orders.filter((order) =>
-            String(order.status ?? order.Status ?? '').trim().toLowerCase() === 'confirmed'
-        )
+        ? orders.filter((order) => {
+            const isConfirmed = String(order.status ?? order.Status ?? '').trim().toLowerCase() === 'confirmed';
+            if (!isConfirmed) return false;
+
+            // In-house manufacturing products skip BOM preparation
+            const rawItems = Array.isArray(order.items) ? order.items : [];
+            const hasSiteAssembly = rawItems.some((item) => (item.fulfilment_mode || 'site_assembly') === 'site_assembly');
+            const isAllInHouse = rawItems.length > 0 && rawItems.every((item) => item.fulfilment_mode === 'in_house_manufacturing');
+
+            if (isAllInHouse || (order.is_in_house_manufacturing && !hasSiteAssembly)) {
+                return false;
+            }
+            return true;
+        })
         : [];
 
     return { data: confirmedOrders };
