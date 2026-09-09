@@ -15,6 +15,7 @@ import {
   Info,
   AlertCircle
 } from "lucide-react";
+import { Pagination } from "../../components/common/pagination";
 
 const getBaseUrl = () => {
   return window.location.hostname === 'localhost'
@@ -29,6 +30,8 @@ const ProductTab = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterMode, setFilterMode] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -99,27 +102,30 @@ const ProductTab = () => {
       if (editingProduct) {
         await axios.put(`${API_BASE}/${editingProduct.id}`, formData);
       } else {
-        await axios.post(API_BASE, formData);
-      }
+        await axios.post(`${API_BASE}/add`, formData);
+      }  
 
+      await fetchProducts();
       setShowModal(false);
-      fetchProducts();
     } catch (err) {
-      console.error("Save product error:", err);
-      setFormError(err.response?.data?.message || "Failed to save product.");
+      console.error("Failed to save product:", err);
+      setFormError(err.response?.data?.message || "Failed to save product");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteProduct = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete product "${name}"?`)) {
+      return;
+    }
+
     try {
       await axios.delete(`${API_BASE}/${id}`);
-      fetchProducts();
+      await fetchProducts();
     } catch (err) {
-      console.error("Delete product error:", err);
-      alert(err.response?.data?.message || "Failed to delete product.");
+      console.error("Failed to delete product:", err);
+      alert(err.response?.data?.message || "Failed to delete product");
     }
   };
 
@@ -136,70 +142,88 @@ const ProductTab = () => {
     return matchesSearch && matchesMode;
   });
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterMode, products.length]);
+
+  const totalItems = filteredProducts.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
-    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl shadow-xs border border-slate-200">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <Package className="text-blue-600" size={24} />
-            Product Master
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Manage your product catalog and configure fulfillment modes (Site Assembly vs In-House Manufacturing).
-          </p>
-        </div>
+    <div className="space-y-4">
+      {/* 🌟 1. PAGE TABS - BOM / BOQ Style */}
+      <div className="bg-white border border-slate-200 px-4 sm:px-6 pt-3 sm:pt-4 rounded-xl shadow-xs">
+        <div className="flex gap-4 sm:gap-8 overflow-x-auto">
+          {/* TAB 1: ALL PRODUCTS */}
+          <button
+            type="button"
+            onClick={() => setFilterMode("all")}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+              filterMode === "all"
+                ? "text-blue-600 border-blue-600 font-semibold"
+                : "text-slate-500 border-transparent hover:text-slate-800"
+            }`}
+          >
+            <span>All Products</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                filterMode === "all" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {products.length}
+            </span>
+          </button>
 
-        <button
-          onClick={openCreateModal}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
-        >
-          <Plus size={16} />
-          Create New Product
-        </button>
-      </div>
-
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <Layers size={22} />
-          </div>
-          <div>
-            <div className="text-xl font-bold text-slate-900">{products.length}</div>
-            <div className="text-xs text-slate-500 font-medium">Total Products</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <Truck size={22} />
-          </div>
-          <div>
-            <div className="text-xl font-bold text-slate-900">
+          {/* TAB 2: SITE ASSEMBLY */}
+          <button
+            type="button"
+            onClick={() => setFilterMode("site_assembly")}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+              filterMode === "site_assembly"
+                ? "text-blue-600 border-blue-600 font-semibold"
+                : "text-slate-500 border-transparent hover:text-slate-800"
+            }`}
+          >
+            <span>Site Assembly / Direct Dispatch</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                filterMode === "site_assembly" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+              }`}
+            >
               {products.filter((p) => (p.fulfilment_mode || "site_assembly") === "site_assembly").length}
-            </div>
-            <div className="text-xs text-slate-500 font-medium">Site Assembly / Direct Dispatch</div>
-          </div>
-        </div>
+            </span>
+          </button>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4 sm:col-span-2 md:col-span-1">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <Factory size={22} />
-          </div>
-          <div>
-            <div className="text-xl font-bold text-slate-900">
+          {/* TAB 3: IN-HOUSE MANUFACTURING */}
+          <button
+            type="button"
+            onClick={() => setFilterMode("in_house_manufacturing")}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+              filterMode === "in_house_manufacturing"
+                ? "text-blue-600 border-blue-600 font-semibold"
+                : "text-slate-500 border-transparent hover:text-slate-800"
+            }`}
+          >
+            <span>In-House Manufacturing</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                filterMode === "in_house_manufacturing" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+              }`}
+            >
               {products.filter((p) => p.fulfilment_mode === "in_house_manufacturing").length}
-            </div>
-            <div className="text-xs text-slate-500 font-medium">In-House Manufacturing</div>
-          </div>
+            </span>
+          </button>
         </div>
       </div>
 
-      {/* Filters & Search */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      {/* 🌟 2. SEARCH & ACTION BUTTON ROW */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
           <input
             type="text"
             placeholder="Search products by name or description..."
@@ -209,39 +233,14 @@ const ProductTab = () => {
           />
         </div>
 
-        {/* Fulfilment Filter Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100/80 rounded-xl border border-slate-200/60 overflow-x-auto">
-          <button
-            onClick={() => setFilterMode("all")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-              filterMode === "all"
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            All Modes
-          </button>
-          <button
-            onClick={() => setFilterMode("site_assembly")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-              filterMode === "site_assembly"
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Site Assembly
-          </button>
-          <button
-            onClick={() => setFilterMode("in_house_manufacturing")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-              filterMode === "in_house_manufacturing"
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            In-House Mfg
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={openCreateModal}
+          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer shrink-0"
+        >
+          <Plus size={15} />
+          Create New Product
+        </button>
       </div>
 
       {/* Products Table */}
@@ -274,11 +273,12 @@ const ProductTab = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredProducts.map((p, idx) => {
+                {paginatedProducts.map((p, idx) => {
                   const isMfg = p.fulfilment_mode === "in_house_manufacturing";
+                  const displayIndex = (currentPage - 1) * itemsPerPage + idx + 1;
                   return (
                     <tr key={p.id || idx} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3 px-4 text-slate-400 font-medium">{idx + 1}</td>
+                      <td className="py-3 px-4 text-slate-400 font-medium">{displayIndex}</td>
                       <td className="py-3 px-4 font-bold text-slate-900">
                         <div className="flex items-center gap-2">
                           <span className="p-1.5 rounded-md bg-slate-100 text-slate-700">
@@ -307,14 +307,14 @@ const ProductTab = () => {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => openEditModal(p)}
-                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                             title="Edit Product"
                           >
                             <Edit2 size={14} />
                           </button>
                           <button
                             onClick={() => handleDeleteProduct(p.id, p.product_name)}
-                            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                             title="Delete Product"
                           >
                             <Trash2 size={14} />
@@ -327,6 +327,17 @@ const ProductTab = () => {
               </tbody>
             </table>
           </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && totalItems > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={(page) => setCurrentPage(page)}
+          />
         )}
       </div>
 

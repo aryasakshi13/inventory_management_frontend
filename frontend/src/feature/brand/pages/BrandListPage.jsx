@@ -30,6 +30,7 @@ import {
   toggleCategoryStatus,
   deleteCategory
 } from '../services/categoryService';
+import { Pagination } from '../../../components/common/pagination';
 
 export const BrandListPage = () => {
   // Active Main Tab: 'brands' or 'categories'
@@ -160,10 +161,49 @@ export const BrandListPage = () => {
     setBrandFormError('');
   };
 
+  const handleBrandNameChange = (e) => {
+    const rawVal = e.target.value;
+    // Allow only alphanumeric characters, spaces, and & . -
+    const cleanVal = rawVal.replace(/[^a-zA-Z0-9\s&.-]/g, '');
+    setBrandNameInput(cleanVal);
+    if (brandFormError) setBrandFormError('');
+  };
+
+  const handleBrandCodeChange = (e) => {
+    const rawVal = e.target.value;
+    // Allow uppercase alphanumeric, hyphens, and underscores
+    const cleanVal = rawVal.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+    setBrandCodeInput(cleanVal);
+  };
+
   const handleBrandSubmit = async (e) => {
     e.preventDefault();
-    if (!brandNameInput.trim()) {
-      setBrandFormError('Please enter a valid brand name.');
+    const trimmedName = brandNameInput.trim();
+    const trimmedCode = brandCodeInput.trim();
+
+    if (!trimmedName) {
+      setBrandFormError('Brand Name is required.');
+      return;
+    }
+
+    if (trimmedName.length < 2) {
+      setBrandFormError('Brand Name must be at least 2 characters long.');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9\s&.-]+$/.test(trimmedName)) {
+      setBrandFormError('Brand Name contains invalid special characters. Only letters, numbers, spaces, and & . - are allowed.');
+      return;
+    }
+
+    // Check for duplicate brand name (case-insensitive)
+    const isDuplicate = brands.some(
+      (b) =>
+        b.brand_name?.trim().toLowerCase() === trimmedName.toLowerCase() &&
+        (!editingBrand || Number(b.brand_id) !== Number(editingBrand.brand_id))
+    );
+    if (isDuplicate) {
+      setBrandFormError(`A brand named "${trimmedName}" already exists.`);
       return;
     }
 
@@ -173,14 +213,14 @@ export const BrandListPage = () => {
 
       if (editingBrand) {
         await updateBrand(editingBrand.brand_id, {
-          brand_code: brandCodeInput.trim(),
-          brand_name: brandNameInput.trim(),
+          brand_code: trimmedCode,
+          brand_name: trimmedName,
           status: editingBrand.status || 'Active',
         });
       } else {
         await createBrand({
-          brand_code: brandCodeInput.trim(),
-          brand_name: brandNameInput.trim(),
+          brand_code: trimmedCode,
+          brand_name: trimmedName,
           status: 'Active',
         });
       }
@@ -255,10 +295,49 @@ export const BrandListPage = () => {
     setCategoryFormError('');
   };
 
+  const handleCategoryNameChange = (e) => {
+    const rawVal = e.target.value;
+    // Allow only alphanumeric characters, spaces, and & . -
+    const cleanVal = rawVal.replace(/[^a-zA-Z0-9\s&.-]/g, '');
+    setCategoryNameInput(cleanVal);
+    if (categoryFormError) setCategoryFormError('');
+  };
+
+  const handleCategoryCodeChange = (e) => {
+    const rawVal = e.target.value;
+    // Allow uppercase alphanumeric, hyphens, and underscores
+    const cleanVal = rawVal.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+    setCategoryCodeInput(cleanVal);
+  };
+
   const handleCategorySubmit = async (e) => {
     e.preventDefault();
-    if (!categoryNameInput.trim()) {
-      setCategoryFormError('Please enter a valid category name.');
+    const trimmedName = categoryNameInput.trim();
+    const trimmedCode = categoryCodeInput.trim();
+
+    if (!trimmedName) {
+      setCategoryFormError('Category Name is required.');
+      return;
+    }
+
+    if (trimmedName.length < 2) {
+      setCategoryFormError('Category Name must be at least 2 characters long.');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9\s&.-]+$/.test(trimmedName)) {
+      setCategoryFormError('Category Name contains invalid special characters. Only letters, numbers, spaces, and & . - are allowed.');
+      return;
+    }
+
+    // Check for duplicate category name (case-insensitive)
+    const isDuplicate = categories.some(
+      (c) =>
+        c.category_name?.trim().toLowerCase() === trimmedName.toLowerCase() &&
+        (!editingCategory || Number(c.category_id) !== Number(editingCategory.category_id))
+    );
+    if (isDuplicate) {
+      setCategoryFormError(`A category named "${trimmedName}" already exists.`);
       return;
     }
 
@@ -268,14 +347,14 @@ export const BrandListPage = () => {
 
       if (editingCategory) {
         await updateCategory(editingCategory.category_id, {
-          category_code: categoryCodeInput.trim(),
-          category_name: categoryNameInput.trim(),
+          category_code: trimmedCode,
+          category_name: trimmedName,
           status: editingCategory.status || 'Active',
         });
       } else {
         await createCategory({
-          category_code: categoryCodeInput.trim(),
-          category_name: categoryNameInput.trim(),
+          category_code: trimmedCode,
+          category_name: trimmedName,
           status: 'Active',
         });
       }
@@ -328,6 +407,28 @@ export const BrandListPage = () => {
   const totalCategories = categories.length;
   const activeCategories = categories.filter((c) => (c.status || '').toLowerCase() === 'active').length;
   const inactiveCategories = totalCategories - activeCategories;
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, brandSearch, brandStatusFilter, categorySearch, categoryStatusFilter, brands.length, categories.length]);
+
+  const totalBrandItems = brands.length;
+  const totalBrandPages = Math.ceil(totalBrandItems / itemsPerPage) || 1;
+  const paginatedBrands = brands.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalCategoryItems = categories.length;
+  const totalCategoryPages = Math.ceil(totalCategoryItems / itemsPerPage) || 1;
+  const paginatedCategories = categories.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="max-w-7xl mx-auto space-y-4 sm:space-y-5 text-xs">
@@ -499,15 +600,16 @@ export const BrandListPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  brands.map((brand, idx) => {
+                  paginatedBrands.map((brand, idx) => {
                     const isActive = (brand.status || '').toLowerCase() === 'active';
                     const isUpdatingThis = brandStatusUpdatingId === brand.brand_id;
                     const code = brand.brand_code || `BRD${String(brand.brand_id).padStart(3, '0')}`;
+                    const displayIndex = (currentPage - 1) * itemsPerPage + idx + 1;
 
                     return (
                       <tr key={brand.brand_id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3.5 px-4 text-center font-mono text-gray-400 text-[11px]">
-                          {idx + 1}
+                          {displayIndex}
                         </td>
                         <td className="py-3.5 px-4 truncate">
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200/80 font-mono font-bold text-xs">
@@ -608,15 +710,16 @@ export const BrandListPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  categories.map((cat, idx) => {
+                  paginatedCategories.map((cat, idx) => {
                     const isActive = (cat.status || '').toLowerCase() === 'active';
                     const isUpdatingThis = categoryStatusUpdatingId === cat.category_id;
                     const code = cat.category_code || `CAT${String(cat.category_id).padStart(3, '0')}`;
+                    const displayIndex = (currentPage - 1) * itemsPerPage + idx + 1;
 
                     return (
                       <tr key={cat.category_id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3.5 px-4 text-center font-mono text-gray-400 text-[11px]">
-                          {idx + 1}
+                          {displayIndex}
                         </td>
                         <td className="py-3.5 px-4 truncate">
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200/80 font-mono font-bold text-xs">
@@ -695,6 +798,26 @@ export const BrandListPage = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {activeTab === 'brands' && !loadingBrands && totalBrandItems > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalBrandPages}
+            totalItems={totalBrandItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={(page) => setCurrentPage(page)}
+          />
+        )}
+        {activeTab === 'categories' && !loadingCategories && totalCategoryItems > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalCategoryPages}
+            totalItems={totalCategoryItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={(page) => setCurrentPage(page)}
+          />
+        )}
       </div>
 
       {/* 🌟 4. ADD / EDIT BRAND MODAL */}
@@ -739,7 +862,7 @@ export const BrandListPage = () => {
                     type="text"
                     placeholder="e.g. BRD001"
                     value={brandCodeInput}
-                    onChange={(e) => setBrandCodeInput(e.target.value)}
+                    onChange={handleBrandCodeChange}
                     className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-gray-900 font-mono font-bold transition uppercase"
                   />
                 </div>
@@ -753,7 +876,7 @@ export const BrandListPage = () => {
                   type="text"
                   placeholder="e.g. Tata, Finolex, Havells, Schneider"
                   value={brandNameInput}
-                  onChange={(e) => setBrandNameInput(e.target.value)}
+                  onChange={handleBrandNameChange}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-gray-900 font-medium transition"
                   autoFocus
                 />
@@ -830,7 +953,7 @@ export const BrandListPage = () => {
                     type="text"
                     placeholder="e.g. CAT001"
                     value={categoryCodeInput}
-                    onChange={(e) => setCategoryCodeInput(e.target.value)}
+                    onChange={handleCategoryCodeChange}
                     className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-gray-900 font-mono font-bold transition uppercase"
                   />
                 </div>
@@ -844,7 +967,7 @@ export const BrandListPage = () => {
                   type="text"
                   placeholder="e.g. Electronics, Hardware, Cables, Sanitary"
                   value={categoryNameInput}
-                  onChange={(e) => setCategoryNameInput(e.target.value)}
+                  onChange={handleCategoryNameChange}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-gray-900 font-medium transition"
                   autoFocus
                 />

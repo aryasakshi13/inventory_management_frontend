@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { X, Save, Package, Wrench, Layers, Box, Info, AlertCircle, Factory } from 'lucide-react';
+import { X, Save, Package, AlertCircle, Lock, CheckCircle2, XCircle } from 'lucide-react';
 import { getActiveCategories } from '../../brand/services/categoryService';
 
 const UOM_OPTIONS = [
@@ -18,17 +17,9 @@ const UOM_OPTIONS = [
   "Cu.Mtr"
 ];
 
-const ITEM_TYPE_OPTIONS = [
-  { value: 'raw_material', label: 'Raw Material', desc: 'Components / parts (product_id: null)' },
-  { value: 'finished_good', label: 'Finished Good', desc: 'Produced goods (linked to Product Master)' },
-  { value: 'consumable', label: 'Consumable', desc: 'General supplies & tools (product_id: null)' }
-];
-
 export const AddEditStoreModal = ({ isOpen, onClose, onSave, editingItem, isSubmitting }) => {
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
-  const [productsList, setProductsList] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(false);
 
   const [formData, setFormData] = useState({
     item_name: '',
@@ -36,8 +27,8 @@ export const AddEditStoreModal = ({ isOpen, onClose, onSave, editingItem, isSubm
     unit: 'Nos',
     item_type: 'raw_material',
     product_id: null,
-    quantity: 0,
     min_threshold: 10,
+    is_active: 1,
   });
 
   useEffect(() => {
@@ -60,29 +51,7 @@ export const AddEditStoreModal = ({ isOpen, onClose, onSave, editingItem, isSubm
         }
       };
 
-      // Fetch Products (for Finished Good linking)
-      const fetchProducts = async () => {
-        try {
-          setLoadingProducts(true);
-          const prodUrl = window.location.hostname === 'localhost'
-            ? 'http://localhost:5001/api/products'
-            : 'https://www.namami-infotech.com/inventory/api/products';
-          const res = await axios.get(prodUrl, { withCredentials: true });
-          const pList = Array.isArray(res?.data)
-            ? res.data
-            : Array.isArray(res?.data?.data)
-              ? res.data.data
-              : [];
-          setProductsList(pList);
-        } catch (err) {
-          console.error("Failed to load products for store items modal:", err);
-        } finally {
-          setLoadingProducts(false);
-        }
-      };
-
       fetchCats();
-      fetchProducts();
     }
   }, [isOpen]);
 
@@ -94,8 +63,8 @@ export const AddEditStoreModal = ({ isOpen, onClose, onSave, editingItem, isSubm
         unit: editingItem.unit || editingItem.uom || 'Nos',
         item_type: editingItem.item_type || 'raw_material',
         product_id: editingItem.product_id || null,
-        quantity: editingItem.quantity ?? 0,
         min_threshold: editingItem.min_threshold ?? editingItem.minThreshold ?? 10,
+        is_active: editingItem.is_active !== undefined ? (Number(editingItem.is_active) === 0 ? 0 : 1) : 1,
       });
     } else {
       setFormData({ 
@@ -104,31 +73,13 @@ export const AddEditStoreModal = ({ isOpen, onClose, onSave, editingItem, isSubm
         unit: 'Nos', 
         item_type: 'raw_material', 
         product_id: null,
-        quantity: 0, 
-        min_threshold: 10 
+        min_threshold: 10,
+        is_active: 1
       });
     }
   }, [editingItem, isOpen]);
 
   if (!isOpen) return null;
-
-  const handleTypeChange = (typeVal) => {
-    setFormData((prev) => ({
-      ...prev,
-      item_type: typeVal,
-      // If switching away from finished_good, reset product_id to null
-      product_id: typeVal === 'finished_good' ? prev.product_id : null
-    }));
-  };
-
-  const handleProductSelect = (pId) => {
-    const matched = productsList.find((p) => String(p.id) === String(pId));
-    setFormData((prev) => ({
-      ...prev,
-      product_id: pId ? Number(pId) : null,
-      item_name: matched ? matched.product_name : prev.item_name
-    }));
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -136,14 +87,19 @@ export const AddEditStoreModal = ({ isOpen, onClose, onSave, editingItem, isSubm
 
     onSave({
       ...formData,
+      item_name: formData.item_name.trim(),
+      category: formData.category.trim(),
       unit: formData.unit || 'Nos',
       uom: formData.unit || 'Nos',
-      item_type: formData.item_type || 'raw_material',
-      product_id: formData.item_type === 'finished_good' ? (formData.product_id ? Number(formData.product_id) : null) : null,
-      quantity: Number(formData.quantity) || 0,
-      min_threshold: Number(formData.min_threshold),
+      item_type: editingItem?.item_type || 'raw_material',
+      product_id: editingItem?.product_id || null,
+      quantity: editingItem ? (Number(editingItem.quantity) || 0) : 0,
+      min_threshold: Number(formData.min_threshold) || 0,
+      is_active: formData.is_active === 0 ? 0 : 1,
     });
   };
+
+  const isEditing = Boolean(editingItem);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 text-xs">
@@ -153,97 +109,38 @@ export const AddEditStoreModal = ({ isOpen, onClose, onSave, editingItem, isSubm
           <div className="flex items-center gap-2">
             <Package size={18} className="text-blue-600" />
             <h2 className="font-bold text-gray-900 text-sm">
-              {editingItem ? 'Edit Store Item' : 'Add New Store Item'}
+              {isEditing ? 'Edit Store Item' : 'Add New Store Item'}
             </h2>
           </div>
-          <button onClick={onClose} disabled={isSubmitting} className="p-1 text-gray-400 hover:text-gray-700 rounded-lg disabled:opacity-50">
+          <button onClick={onClose} disabled={isSubmitting} className="p-1 text-gray-400 hover:text-gray-700 rounded-lg disabled:opacity-50 cursor-pointer">
             <X size={16} />
           </button>
         </div>
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Item Type Selector */}
+          {/* Category - Locked / Disabled on Edit */}
           <div>
-            <label className="block font-bold text-gray-700 uppercase text-[10px] mb-1.5">
-              Item Classification *
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {ITEM_TYPE_OPTIONS.map((opt) => {
-                const isSelected = formData.item_type === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => handleTypeChange(opt.value)}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      isSelected
-                        ? opt.value === 'finished_good'
-                          ? 'border-purple-600 bg-purple-50/80 text-purple-900 font-bold shadow-2xs'
-                          : 'border-blue-600 bg-blue-50/80 text-blue-900 font-bold shadow-2xs'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700 font-medium'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      {opt.value === 'finished_good' ? (
-                        <Box size={14} className="text-purple-600 shrink-0" />
-                      ) : opt.value === 'consumable' ? (
-                        <Wrench size={14} className="text-slate-600 shrink-0" />
-                      ) : (
-                        <Layers size={14} className="text-blue-600 shrink-0" />
-                      )}
-                      <span className="text-xs font-bold">{opt.label}</span>
-                    </div>
-                  </button>
-                );
-              })}
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-bold text-gray-700 uppercase text-[10px]">
+                Category *
+              </label>
+              {isEditing && (
+                <span className="flex items-center gap-1 text-[10px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                  <Lock size={10} /> Category cannot be changed
+                </span>
+              )}
             </div>
-          </div>
-
-          {/* Conditional Product Link Notice */}
-          {formData.item_type === 'finished_good' ? (
-            <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="block font-bold text-purple-900 uppercase text-[10px]">
-                  Linked Product Master (Optional / Recommended)
-                </label>
-                <span className="text-[10px] text-purple-600 font-medium">product_id map</span>
-              </div>
-              <select
-                value={formData.product_id || ''}
-                onChange={(e) => handleProductSelect(e.target.value)}
-                className="w-full p-2 border border-purple-300 rounded-lg text-gray-900 outline-none focus:ring-2 focus:ring-purple-500 bg-white font-medium text-xs"
-              >
-                <option value="">-- Direct Finished Good (Or select Product) --</option>
-                {productsList.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.product_name}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[10px] text-purple-700 leading-tight">
-                Selecting a product links this finished stock directly to production orders & delivery fulfillment.
-              </p>
-            </div>
-          ) : (
-            <div className="p-2.5 bg-blue-50/60 border border-blue-100 rounded-xl flex items-center gap-2 text-blue-700 text-[11px]">
-              <Info size={14} className="shrink-0 text-blue-500" />
-              <span>
-                Raw materials & consumables are shared components across multiple BOMs (<b>product_id = null</b>).
-              </span>
-            </div>
-          )}
-
-          {/* Category */}
-          <div>
-            <label className="block font-bold text-gray-700 uppercase text-[10px] mb-1">
-              Category *
-            </label>
             <select
               required
+              disabled={isEditing}
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full p-2.5 border border-gray-300 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium text-xs"
+              className={`w-full p-2.5 border rounded-xl outline-none text-xs font-medium ${
+                isEditing
+                  ? 'bg-gray-100 border-gray-200 text-gray-600 cursor-not-allowed'
+                  : 'bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500'
+              }`}
             >
               <option value="">
                 {loadingCategories ? 'Loading categories...' : '-- Select Category --'}
@@ -271,14 +168,15 @@ export const AddEditStoreModal = ({ isOpen, onClose, onSave, editingItem, isSubm
             <input
               type="text"
               required
-              placeholder={formData.item_type === 'finished_good' ? "e.g. 5kVA Solar Inverter" : "e.g. 4 sq.mm DC Solar Cable / MC4 Connector"}
+              placeholder="e.g. 4 sq.mm DC Solar Cable / MC4 Connector"
               value={formData.item_name}
               onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
-              className="w-full p-2.5 border border-gray-300 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+              className="w-full p-2.5 border border-gray-300 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 text-xs bg-white"
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-2.5">
+          {/* UOM and Min Alert */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-gray-700 uppercase text-[10px] mb-1">
                 UOM *
@@ -298,20 +196,7 @@ export const AddEditStoreModal = ({ isOpen, onClose, onSave, editingItem, isSubm
 
             <div>
               <label className="block font-bold text-gray-700 uppercase text-[10px] mb-1">
-                Stock Qty
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                className="w-full p-2.5 border border-gray-300 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-gray-700 uppercase text-[10px] mb-1">
-                Min Alert *
+                Min Stock Alert *
               </label>
               <input
                 type="number"
@@ -319,8 +204,42 @@ export const AddEditStoreModal = ({ isOpen, onClose, onSave, editingItem, isSubm
                 required
                 value={formData.min_threshold}
                 onChange={(e) => setFormData({ ...formData, min_threshold: e.target.value })}
-                className="w-full p-2.5 border border-gray-300 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                className="w-full p-2.5 border border-gray-300 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 text-xs bg-white"
               />
+            </div>
+          </div>
+
+          {/* Status: Active / Inactive */}
+          <div>
+            <label className="block font-bold text-gray-700 uppercase text-[10px] mb-1">
+              Status (Active / Inactive) *
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, is_active: 1 })}
+                className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                  formData.is_active === 1
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-2xs ring-1 ring-emerald-500'
+                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <CheckCircle2 size={14} className={formData.is_active === 1 ? 'text-emerald-600' : 'text-gray-400'} />
+                <span>Active</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, is_active: 0 })}
+                className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                  formData.is_active === 0
+                    ? 'bg-rose-50 border-rose-500 text-rose-700 shadow-2xs ring-1 ring-rose-500'
+                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <XCircle size={14} className={formData.is_active === 0 ? 'text-rose-600' : 'text-gray-400'} />
+                <span>Inactive</span>
+              </button>
             </div>
           </div>
 
@@ -330,14 +249,14 @@ export const AddEditStoreModal = ({ isOpen, onClose, onSave, editingItem, isSubm
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-100 disabled:opacity-50"
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-100 disabled:opacity-50 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs cursor-pointer"
             >
               <Save size={14} /> {isSubmitting ? 'Saving...' : 'Save Item'}
             </button>

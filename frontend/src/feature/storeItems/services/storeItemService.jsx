@@ -39,22 +39,38 @@ export const getStoreItemById = async (id) => {
 // Update store item by ID
 export const updateStoreItem = async (id, itemData) => {
   console.log('updateStoreItem called:', id, itemData);
-  const response = await axios.put(`${BASE_URL}/${id}`, itemData, {
-    withCredentials: true,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-  console.log('updateStoreItem response:', response);
-  return response.data;
+  try {
+    const response = await axios.put(`${BASE_URL}/update/${id}`, itemData, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  } catch (err) {
+    // Fallback if /update/:id is not found
+    const response = await axios.put(`${BASE_URL}/${id}`, itemData, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  }
 };
 
 // Delete store item by ID
 export const deleteStoreItem = async (id) => {
   console.log('deleteStoreItem called:', id);
-  const response = await axios.delete(`${BASE_URL}/${id}`, {
-    withCredentials: true,
-  });
-  console.log('deleteStoreItem response:', response);
-  return response.data;
+  try {
+    const response = await axios.delete(`${BASE_URL}/delete/${id}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (err) {
+    const response = await axios.delete(`${BASE_URL}/${id}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  }
 };

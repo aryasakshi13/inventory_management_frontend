@@ -295,19 +295,6 @@ const BOMManagementPage = () => {
 
                 <button
                     type="button"
-                    onClick={() => {
-                        setNewProductName("");
-                        setNewProductDescription("");
-                        setProductError("");
-                        setShowProductModal(true);
-                    }}
-                    className="flex-1 sm:flex-initial px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-lg text-xs sm:text-sm shadow-xs transition cursor-pointer"
-                >
-                    + Create Product
-                </button>
-
-                <button
-                    type="button"
                     onClick={handleCreate}
                     className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-xs sm:text-sm shadow-xs transition cursor-pointer"
                 >

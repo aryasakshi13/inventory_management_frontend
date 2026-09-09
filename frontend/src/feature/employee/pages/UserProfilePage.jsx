@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 export const UserProfilePage = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     try {
@@ -31,7 +32,7 @@ export const UserProfilePage = () => {
     }
   }, []);
 
-  const handleLogout = () => {
+  const handleConfirmLogout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -103,7 +104,7 @@ export const UserProfilePage = () => {
 
           {/* Quick Sign Out Action */}
           <Button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutModal(true)}
             variant="outline"
             className="w-full md:w-auto bg-white/10 hover:bg-rose-500/20 text-white hover:text-rose-300 border-white/20 hover:border-rose-400/40 text-xs font-semibold gap-2 transition-all shrink-0 cursor-pointer justify-center"
           >
@@ -244,6 +245,43 @@ export const UserProfilePage = () => {
         </CardContent>
       </Card>
 
+      {/* 🌟 Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-sm overflow-hidden p-6 space-y-4 text-xs animate-in zoom-in-95 duration-150">
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shadow-xs">
+                <LogOut size={22} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Confirm Sign Out</h3>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                  Are you sure you want to log out of your session? You will need your login credentials to access the system again.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs transition cursor-pointer border border-gray-300"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmLogout}
+                className="w-full py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <LogOut size={14} />
+                <span>Yes, Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

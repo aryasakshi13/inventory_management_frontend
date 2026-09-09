@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Send, ArrowLeft, PackageCheck, AlertCircle, Clock, CheckCircle2, Truck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Send, ArrowLeft, PackageCheck, AlertCircle, Clock, CheckCircle2, Truck, Calendar } from 'lucide-react';
 import { useDeliveryForm } from '../hooks/useDeliveryForm';
 import { fetchSalesOrders } from '../../client/services/salesOrderService';
 import { fetchAllBOMPreparations } from '../../bomPreparation/services/bomPreparationService';
 import { createDeliveryChallan, fetchOrderDispatchSummary, getAllDeliveryChallans } from '../services/deliveryService';
 
 export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
+  const dateInputRef = useRef(null);
   const [salesOrders, setSalesOrders] = useState([]);
   const [selectedOrderId, setSelectedOrderId] = useState('');
   const [selectedOrderSummary, setSelectedOrderSummary] = useState(null);
@@ -28,6 +29,22 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
     updateItemRow,
     resetForm,
   } = useDeliveryForm();
+
+  // Transporter Name Change with instant validation / character filter
+  const handleTransporterChange = (e) => {
+    const rawVal = e.target.value;
+    // Allow only alphanumeric characters, spaces, &, ., - (strictly NO slashes / or //)
+    const cleanVal = rawVal.replace(/[^a-zA-Z0-9\s&.-]/g, '');
+    handleHeaderChange({ target: { name: 'transporter_name', value: cleanVal } });
+  };
+
+  // Vehicle Number Change with auto uppercase & character filter
+  const handleVehicleChange = (e) => {
+    const rawVal = e.target.value;
+    // Auto capitalize and allow only uppercase letters, numbers, spaces, and hyphens
+    const cleanVal = rawVal.toUpperCase().replace(/[^A-Z0-9\s-]/g, '');
+    handleHeaderChange({ target: { name: 'vehicle_no', value: cleanVal } });
+  };
 
   // Fetch sales orders and filter to ONLY those with remaining balance to deliver
   useEffect(() => {
@@ -202,6 +219,26 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
     if (!selectedOrderId) return setError('Please select a Sales Order / PO Number.');
     if (!formData.dispatch_date) return setError('Dispatch date is required.');
 
+    // Transporter Name validation
+    if (formData.transporter_name && formData.transporter_name.trim()) {
+      const transName = formData.transporter_name.trim();
+      if (!/^[a-zA-Z0-9\s&.-]+$/.test(transName)) {
+        return setError('Transporter Name contains invalid special characters (slashes and symbols are not allowed).');
+      }
+    }
+
+    // Vehicle No validation
+    if (formData.vehicle_no && formData.vehicle_no.trim()) {
+      const vehNo = formData.vehicle_no.trim();
+      if (!/^[A-Z0-9\s-]+$/.test(vehNo)) {
+        return setError('Vehicle Number contains invalid characters. Only letters, numbers, spaces, and hyphens are allowed.');
+      }
+      const rawAlphanumeric = vehNo.replace(/[\s-]/g, '');
+      if (rawAlphanumeric.length < 4) {
+        return setError('Please enter a valid Vehicle Number (at least 4 characters, e.g. DL 01 AB 1234).');
+      }
+    }
+
     // Filter items to dispatch (only items with delivered_qty > 0)
     const itemsToDispatch = items.filter((row) => Number(row.delivered_qty) > 0);
 
@@ -232,8 +269,8 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
       order_id: Number(selectedOrderId) || selectedOrderId,
       preparation_id: preparationId || null,
       dispatch_date: formData.dispatch_date,
-      transporter_name: formData.transporter_name || '',
-      vehicle_no: formData.vehicle_no || '',
+      transporter_name: formData.transporter_name ? formData.transporter_name.trim() : '',
+      vehicle_no: formData.vehicle_no ? formData.vehicle_no.trim() : '',
       delivery_items: itemsToDispatch.map((item) => ({
         item_id: Number(item.item_id || item.product_id || item.id) || null,
         product_id: Number(item.product_id || item.item_id || item.id) || null,
@@ -325,13 +362,21 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
             {/* Dispatch Date */}
             <div>
               <label className="block font-medium text-gray-700 mb-1">Dispatch Date *</label>
-              <input
-                type="date"
-                name="dispatch_date"
-                value={formData.dispatch_date}
-                onChange={handleHeaderChange}
-                className="w-full border border-gray-300 rounded-md p-2 bg-white focus:ring-1 focus:ring-blue-500 text-black"
-              />
+              <div
+                onClick={() => dateInputRef.current?.showPicker?.()}
+                className="relative cursor-pointer"
+              >
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  name="dispatch_date"
+                  value={formData.dispatch_date}
+                  onChange={handleHeaderChange}
+                  onClick={(e) => e.currentTarget?.showPicker?.()}
+                  onFocus={(e) => e.currentTarget?.showPicker?.()}
+                  className="w-full border border-gray-300 rounded-md p-2 bg-white focus:ring-1 focus:ring-blue-500 text-black cursor-pointer font-medium"
+                />
+              </div>
             </div>
 
             {/* Transporter Name */}
@@ -340,9 +385,9 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
               <input
                 type="text"
                 name="transporter_name"
-                placeholder="Courier / Transport Service"
+                placeholder="e.g. Blue Dart, VRL Logistics"
                 value={formData.transporter_name}
-                onChange={handleHeaderChange}
+                onChange={handleTransporterChange}
                 className="w-full border border-gray-300 rounded-md p-2 bg-white focus:ring-1 focus:ring-blue-500 text-black"
               />
             </div>
@@ -353,10 +398,10 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
               <input
                 type="text"
                 name="vehicle_no"
-                placeholder="e.g. DL 01 AB 1234"
+                placeholder="e.g. DL 01 AB 1234 / UP32AB1234"
                 value={formData.vehicle_no}
-                onChange={handleHeaderChange}
-                className="w-full border border-gray-300 rounded-md p-2 bg-white focus:ring-1 focus:ring-blue-500 text-black"
+                onChange={handleVehicleChange}
+                className="w-full border border-gray-300 rounded-md p-2 bg-white focus:ring-1 focus:ring-blue-500 text-black font-mono uppercase"
               />
             </div>
 

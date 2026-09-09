@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
+  LayoutDashboard,
   Users,
   ShoppingBag,
   ShoppingCart,
@@ -17,6 +18,7 @@ import {
 import { useNavigate, useLocation, Routes, Route, Navigate } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 
+import { DashboardPage } from "../feature/dashboard/pages/DashboardPage";
 import { ClientListPage } from "../feature/client/pages/clientPage";
 import { ClientDetailPage } from "../feature/client/pages/clientDetailsPage";
 import { SalesOrderPage } from "../feature/sales/pages/salesOrderPage";
@@ -54,6 +56,12 @@ const MainModule = () => {
 
   const menuItems = [
     {
+      name: "Dashboard",
+      path: "dashboard",
+      icon: LayoutDashboard,
+      allowedRoles: ["sales", "store manager", "Admin", "Super Admin", "site engineer"],
+    },
+    {
       name: "Store Items",
       path: "store",
       icon: Package,
@@ -78,7 +86,7 @@ const MainModule = () => {
       allowedRoles: ["sales", "store manager", "Admin", "Super Admin"],
     },
     {
-      name: "Client Page",
+      name: "Client / Vendor",
       path: "clients",
       icon: Users,
       allowedRoles: ["sales", "store manager", "Admin", "Super Admin"],
@@ -127,7 +135,7 @@ const MainModule = () => {
   const activeTab =
     location.pathname === "/pages/mainModule" ||
     location.pathname === "/pages/mainModule/"
-      ? "Store Items"
+      ? "Dashboard"
       : isProfileActive
       ? "User Profile"
       : menuItems.find(
@@ -135,7 +143,7 @@ const MainModule = () => {
             item.path &&
             (currentSubPath === item.path ||
               currentSubPath.startsWith(`${item.path}/`))
-        )?.name || "Store Items";
+        )?.name || "Dashboard";
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-900 text-xs">
@@ -262,8 +270,9 @@ const MainModule = () => {
         {/* Viewport Content */}
         <div className="flex-1 p-3.5 sm:p-5 md:p-6 overflow-y-auto overflow-x-hidden">
           <Routes>
-            <Route index element={<Navigate to="store" replace />} />
+            <Route index element={<Navigate to="dashboard" replace />} />
 
+            <Route path="dashboard" element={<DashboardPage />} />
             <Route path="store" element={<StorePage />} />
             <Route path="products" element={<ProductTab />} />
 

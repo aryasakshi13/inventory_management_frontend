@@ -204,17 +204,19 @@ export const exportWarehouseStockReport = (items = []) => {
     const threshold = item.min_threshold ?? item.minThreshold ?? 10;
     const quantity = item.quantity ?? 0;
     const status = getItemStatus(quantity, threshold);
+    const itemType = (item.item_type || 'raw_material').replace('_', ' ');
 
     return {
       "S.No": index + 1,
       "Item Code / ID": item.item_code || `STORE-${item.id || index + 1}`,
-      "Item Name": item.item_name || item.itemName || "—",
+      "Classification": itemType.charAt(0).toUpperCase() + itemType.slice(1),
       "Category": item.category || "General",
+      "Item Name": item.item_name || item.itemName || "—",
       "UOM / Unit": item.unit || item.uom || "Nos",
       "Current Stock Quantity": quantity,
       "Min Alert Threshold": threshold,
       "Stock Status": status,
-      "Brand": item.brand || "—",
+      "Item Status": item.is_active !== undefined ? (Number(item.is_active) === 0 ? "Inactive" : "Active") : "Active",
     };
   });
 

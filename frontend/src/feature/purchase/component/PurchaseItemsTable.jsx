@@ -23,7 +23,16 @@ export const PurchaseItemsTable = ({ items, addItemRow, removeItemRow, updateIte
               : Array.isArray(data?.storeItems)
                 ? data.storeItems
                 : [];
-        setStoreItems(itemsList);
+
+        // Exclude Finished Goods (only keep Raw Materials & Consumables for Purchase Orders)
+        const rawItemsOnly = itemsList.filter((it) => {
+          const type = (it.item_type || '').toLowerCase().trim();
+          const cat = (it.category || '').toLowerCase().trim();
+          const isFinished = type === 'finished_good' || cat === 'finished goods' || cat === 'finished good' || it.product_id;
+          return !isFinished;
+        });
+
+        setStoreItems(rawItemsOnly);
       } catch (err) {
         console.error('Failed to fetch store items for purchase entry:', err);
       } finally {

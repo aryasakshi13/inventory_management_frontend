@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, Edit, Trash2, CheckCircle2, AlertTriangle, XCircle, ShoppingCart, Layers, Box, Wrench, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Pagination } from '../../../components/common/pagination';
 
-export const StoreItemsTable = ({ items, onEdit, onDelete, onView, loading }) => {
+export const StoreItemsTable = ({ items = [], onEdit, onDelete, onView, loading }) => {
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [items.length]);
 
   // Helper function to calculate status automatically based on quantity vs threshold
   const getItemStatus = (qty, threshold) => {
@@ -43,33 +50,37 @@ export const StoreItemsTable = ({ items, onEdit, onDelete, onView, loading }) =>
     const type = item.item_type || 'raw_material';
     switch (type) {
       case 'finished_good':
-        return (
-          <div className="flex flex-col gap-0.5">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 w-fit">
-              <Box size={10} /> Finished Good
-            </span>
-            {item.linked_product_name && (
-              <span className="text-[10px] text-purple-600 font-medium truncate max-w-[130px]" title={`Linked Product: ${item.linked_product_name}`}>
-                🔗 {item.linked_product_name}
-              </span>
-            )}
-          </div>
-        );
+        return <span className="font-medium text-slate-700">Finished Good</span>;
       case 'consumable':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 w-fit">
-            <Wrench size={10} /> Consumable
-          </span>
-        );
+        return <span className="font-medium text-slate-700">Consumable</span>;
       case 'raw_material':
       default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 w-fit">
-            <Layers size={10} /> Raw Material
-          </span>
-        );
+        return <span className="font-medium text-slate-700">Raw Material</span>;
     }
   };
+
+  const renderActiveBadge = (isActive) => {
+    const active = isActive !== undefined ? (Number(isActive) === 0 ? false : true) : true;
+    if (active) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <CheckCircle2 size={10} /> Active
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+        <XCircle size={10} /> Inactive
+      </span>
+    );
+  };
+
+  const totalItems = items.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const paginatedItems = items.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-2xs text-xs">
@@ -84,41 +95,41 @@ export const StoreItemsTable = ({ items, onEdit, onDelete, onView, loading }) =>
               <th className="py-3 px-4 text-center">UOM</th>
               <th className="py-3 px-4 text-center">Quantity</th>
               <th className="py-3 px-4 text-center">Min Threshold</th>
-              <th className="py-3 px-4">Status</th>
+              <th className="py-3 px-4">Stock Status</th>
+              <th className="py-3 px-4 text-center">Status</th>
               <th className="py-3 px-4 text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan="9" className="py-8 text-center text-gray-500">
+                <td colSpan="10" className="py-8 text-center text-gray-500">
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                     <span>Loading store items...</span>
                   </div>
                 </td>
               </tr>
-            ) : items.length > 0 ? (
-              items.map((item, idx) => {
+            ) : paginatedItems.length > 0 ? (
+              paginatedItems.map((item, idx) => {
                 const itemId = item.id || item._id;
                 const threshold = item.min_threshold ?? item.minThreshold ?? 10;
                 const quantity = item.quantity ?? 0;
                 const status = getItemStatus(quantity, threshold);
                 const uomVal = item.unit || item.uom || "Nos";
+                const displayIndex = (currentPage - 1) * itemsPerPage + idx + 1;
 
                 return (
                   <tr key={itemId || idx} className="hover:bg-gray-50/70 transition">
                     {/* Index */}
-                    <td className="py-3 px-4 text-center font-bold text-gray-400">{idx + 1}</td>
+                    <td className="py-3 px-4 text-center font-bold text-gray-400">{displayIndex}</td>
 
                     {/* Classification */}
                     <td className="py-3 px-4">{renderTypeBadge(item)}</td>
 
-                    {/* Category */}
-                    <td className="py-3 px-4">
-                      <span className="px-2.5 py-0.5 bg-gray-100 border border-gray-200 rounded-md text-gray-700 font-medium text-[11px]">
-                        {item.category}
-                      </span>
+                    {/* Category - Normal Clean Text */}
+                    <td className="py-3 px-4 font-medium text-gray-700">
+                      {item.category || '-'}
                     </td>
 
                     {/* Item Name */}
@@ -128,11 +139,9 @@ export const StoreItemsTable = ({ items, onEdit, onDelete, onView, loading }) =>
                       </div>
                     </td>
 
-                    {/* UOM */}
-                    <td className="py-3 px-4 text-center">
-                      <span className="px-2.5 py-0.5 bg-blue-50 border border-blue-200 rounded-md text-blue-700 font-semibold text-[11px]">
-                        {uomVal}
-                      </span>
+                    {/* UOM - Normal Clean Text */}
+                    <td className="py-3 px-4 text-center font-medium text-gray-600">
+                      {uomVal}
                     </td>
 
                     {/* Quantity */}
@@ -147,32 +156,30 @@ export const StoreItemsTable = ({ items, onEdit, onDelete, onView, loading }) =>
                       {threshold}
                     </td>
 
-                    {/* Status Badge */}
+                    {/* Stock Status Badge */}
                     <td className="py-3 px-4">{renderStatusBadge(status)}</td>
+
+                    {/* Active / Inactive Status */}
+                    <td className="py-3 px-4 text-center">{renderActiveBadge(item.is_active)}</td>
 
                     {/* Actions */}
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button
+                          type="button"
                           onClick={() => onView && onView(item)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-gray-100 transition"
+                          className="p-1.5 text-gray-500 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition cursor-pointer"
                           title="View Details"
                         >
                           <Eye size={15} />
                         </button>
                         <button
-                          onClick={() => onEdit(item)}
-                          className="p-1.5 text-gray-400 hover:text-emerald-600 rounded-lg hover:bg-gray-100 transition"
+                          type="button"
+                          onClick={() => onEdit && onEdit(item)}
+                          className="p-1.5 text-gray-500 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition cursor-pointer"
                           title="Edit Item"
                         >
                           <Edit size={15} />
-                        </button>
-                        <button
-                          onClick={() => onDelete(itemId)}
-                          className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-gray-100 transition"
-                          title="Delete Item"
-                        >
-                          <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
@@ -181,7 +188,7 @@ export const StoreItemsTable = ({ items, onEdit, onDelete, onView, loading }) =>
               })
             ) : (
               <tr>
-                <td colSpan="9" className="py-8 text-center text-gray-400">
+                <td colSpan="10" className="py-8 text-center text-gray-400">
                   No store items found matching your filters.
                 </td>
               </tr>
@@ -189,6 +196,17 @@ export const StoreItemsTable = ({ items, onEdit, onDelete, onView, loading }) =>
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && totalItems > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(page) => setCurrentPage(page)}
+        />
+      )}
     </div>
   );
 };
