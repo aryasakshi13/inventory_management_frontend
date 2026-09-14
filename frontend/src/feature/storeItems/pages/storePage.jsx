@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Package,
   Search,
@@ -43,15 +44,14 @@ import { getProductionTaskById, issueMaterialsToProduction, rejectProductionRequ
 const formatQty = (num) => {
   if (num === undefined || num === null) return '0';
   const n = parseFloat(num);
-  if (isNaN(n)) return '0';
-  return Number.isInteger(n) ? n.toString() : parseFloat(n.toFixed(2)).toString();
+  return isNaN(n) ? '0' : Number(n.toFixed(3)).toString();
 };
 
-// Format date nicely (e.g. 09 Sep 2026, 11:30 AM)
-const formatDate = (dateStr) => {
-  if (!dateStr) return 'Recent';
+// Format Timestamp Helper
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '—';
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return 'Recent';
+  if (isNaN(d.getTime())) return '—';
   return d.toLocaleString('en-IN', {
     day: '2-digit',
     month: 'short',
@@ -63,6 +63,7 @@ const formatDate = (dateStr) => {
 };
 
 export const StorePage = () => {
+  const location = useLocation();
   const {
     items,
     categories,
@@ -88,6 +89,23 @@ export const StorePage = () => {
     handleSaveItem,
     handleDeleteItem,
   } = useStoreItems();
+
+  // Initialize status or itemType filter from navigation state (e.g. from Dashboard click)
+  useEffect(() => {
+    if (location.state?.itemType) {
+      setSelectedItemType(location.state.itemType);
+      setSelectedStatus('');
+      setSelectedCategory('');
+      setSearchQuery('');
+      setStoreTab('master');
+    } else if (location.state?.status) {
+      setSelectedStatus(location.state.status);
+      setSelectedItemType('all');
+      setSelectedCategory('');
+      setSearchQuery('');
+      setStoreTab('master');
+    }
+  }, [location.key, location.state, setSelectedStatus, setSelectedItemType, setSelectedCategory, setSearchQuery]);
 
   // Active Store Tab: 'master', 'requisitions', 'logs'
   const [storeTab, setStoreTab] = useState('master');

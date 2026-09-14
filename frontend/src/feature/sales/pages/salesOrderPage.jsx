@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useSalesOrder } from '../hooks/useSalesOrder';
 import { SalesOrderFilter } from '../component/salesOrderFilter';
 import { SalesOrderTable } from '../component/salesOrderTable';
@@ -12,6 +13,7 @@ import { exportSalesOrdersReport } from '../../../utils/exportReport';
 import { AddSalesOrderModal } from '../../client/componenets/AddSalesOrderModal';
 
 export const SalesOrderPage = () => {
+  const location = useLocation();
   const {
     orders,
     loading,
@@ -24,6 +26,15 @@ export const SalesOrderPage = () => {
     addOrder,
     updateOrderStatus,
   } = useSalesOrder();
+
+  // Listen to navigation state filter (e.g. from Dashboard click on Confirmed or Pending)
+  useEffect(() => {
+    if (location.state?.status) {
+      clearInlineFilters();
+      setInlineFilter('status', location.state.status);
+      setSearchQuery('');
+    }
+  }, [location.key, location.state]);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userRole = user.role || user.Role || '';

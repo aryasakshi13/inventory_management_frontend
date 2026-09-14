@@ -49,8 +49,8 @@ export const useStoreItems = () => {
 
   // Helper function for stock calculations
   const getItemStatus = (qty, threshold) => {
-    const quantity = qty ?? 0;
-    const thresh = threshold ?? 10;
+    const quantity = parseFloat(qty ?? 0);
+    const thresh = parseFloat(threshold ?? 10);
     if (quantity <= 0) return 'Out of Stock';
     if (quantity <= thresh) return 'Low Stock';
     return 'In Stock';
@@ -63,10 +63,11 @@ export const useStoreItems = () => {
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
-      const thresh = item.min_threshold ?? item.minThreshold ?? 10;
-      const status = getItemStatus(item.quantity, thresh);
+      const thresh = item.min_threshold ?? item.minThreshold ?? item.min_stock_level ?? item.reorder_point ?? 10;
+      const qty = item.quantity ?? item.stock_quantity ?? item.opening_stock ?? 0;
+      const status = getItemStatus(qty, thresh);
       const name = item.item_name || item.name || '';
-      const itemType = item.item_type || 'raw_material';
+      const rawTypeStr = (item.item_type || item.type || '').toString().toLowerCase().trim();
 
       const matchesSearch =
         name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -74,8 +75,18 @@ export const useStoreItems = () => {
         (item.linked_product_name || '').toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesCategory = selectedCategory ? item.category === selectedCategory : true;
-      const matchesStatus = selectedStatus ? status === selectedStatus : true;
-      const matchesItemType = selectedItemType === 'all' ? true : itemType === selectedItemType;
+      const matchesStatus = selectedStatus
+        ? status.trim().toLowerCase() === selectedStatus.trim().toLowerCase()
+        : true;
+
+      let matchesItemType = true;
+      if (selectedItemType === 'finished_good') {
+        matchesItemType = rawTypeStr.includes('finish');
+      } else if (selectedItemType === 'raw_material') {
+        matchesItemType = !rawTypeStr.includes('finish') && !rawTypeStr.includes('consum');
+      } else if (selectedItemType === 'consumable') {
+        matchesItemType = rawTypeStr.includes('consum');
+      }
 
       return matchesSearch && matchesCategory && matchesStatus && matchesItemType;
     });
@@ -90,16 +101,21 @@ export const useStoreItems = () => {
     let consumableCount = 0;
 
     items.forEach((item) => {
-      const thresh = item.min_threshold ?? item.minThreshold ?? 10;
-      const status = getItemStatus(item.quantity, thresh);
+      const thresh = item.min_threshold ?? item.minThreshold ?? item.min_stock_level ?? item.reorder_point ?? 10;
+      const qty = item.quantity ?? item.stock_quantity ?? item.opening_stock ?? 0;
+      const status = getItemStatus(qty, thresh);
       if (status === 'In Stock') inStock++;
       if (status === 'Low Stock') lowStock++;
       if (status === 'Out of Stock') outOfStock++;
 
-      const type = item.item_type || 'raw_material';
-      if (type === 'finished_good') finishedCount++;
-      else if (type === 'consumable') consumableCount++;
-      else rawCount++;
+      const rawTypeStr = (item.item_type || item.type || '').toString().toLowerCase().trim();
+      if (rawTypeStr.includes('finish')) {
+        finishedCount++;
+      } else if (rawTypeStr.includes('consum')) {
+        consumableCount++;
+      } else {
+        rawCount++;
+      }
     });
 
     return { 

@@ -1,10 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Menu, X, AlertCircle } from "lucide-react";
+import { LogOut, Menu, X, Bell, User } from "lucide-react";
 
 export const Navbar = ({ activeTab, onToggleSidebar, isSidebarOpen }) => {
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  // Current logged in user info
+  let currentUser = null;
+  try {
+    currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  } catch (e) {
+    currentUser = {};
+  }
+
+  const userName = currentUser?.employee_name || currentUser?.name || "User";
+  const userRole = currentUser?.role || currentUser?.Role || "Admin";
+  const userInitial = (userName[0] || "U").toUpperCase();
 
   const handleConfirmLogout = () => {
     // 1. Clear stored authentication data
@@ -44,6 +56,37 @@ export const Navbar = ({ activeTab, onToggleSidebar, isSidebarOpen }) => {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Notification Bell */}
+          <button
+            type="button"
+            onClick={() => navigate("/pages/mainModule/store")}
+            className="relative p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition cursor-pointer border border-gray-200"
+            title="Stock & System Notifications"
+          >
+            <Bell size={16} />
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white"></span>
+          </button>
+
+          {/* User Profile Pill */}
+          <button
+            type="button"
+            onClick={() => navigate("/pages/mainModule/profile")}
+            className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-gray-200 rounded-xl transition cursor-pointer text-left group"
+            title="View User Profile"
+          >
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs group-hover:scale-105 transition-transform">
+              {userInitial}
+            </div>
+            <div className="hidden md:block">
+              <span className="font-bold text-gray-900 block leading-tight text-xs max-w-[120px] truncate">
+                {userName}
+              </span>
+              <span className="text-[10px] text-gray-500 capitalize block leading-none mt-0.5">
+                {userRole}
+              </span>
+            </div>
+          </button>
+
           {/* Sign Out Button */}
           <button
             type="button"
