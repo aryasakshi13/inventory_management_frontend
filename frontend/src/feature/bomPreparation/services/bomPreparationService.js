@@ -17,6 +17,16 @@ export const getConfirmedSalesOrders = async (params = {}) => {
             if (!isConfirmed) return false;
 
             // In-house manufacturing products skip BOM preparation
+            const isInHouse =
+                order.orderType === 'in_house' ||
+                order.order_type === 'in_house' ||
+                (typeof order.projectName === 'string' && order.projectName.toLowerCase().startsWith('in-house')) ||
+                (typeof order.project_name === 'string' && order.project_name.toLowerCase().startsWith('in-house'));
+
+            if (isInHouse) {
+                return false;
+            }
+
             const rawItems = Array.isArray(order.items) ? order.items : [];
             const hasSiteAssembly = rawItems.some((item) => (item.fulfilment_mode || 'site_assembly') === 'site_assembly');
             const isAllInHouse = rawItems.length > 0 && rawItems.every((item) => item.fulfilment_mode === 'in_house_manufacturing');

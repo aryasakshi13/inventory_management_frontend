@@ -1,5 +1,19 @@
 import React from "react";
-import { X, FileText, ExternalLink, Wrench, MapPin, Calendar, Phone, User, Building2, UserCheck, Info } from "lucide-react";
+import {
+    X,
+    FileText,
+    ExternalLink,
+    Wrench,
+    MapPin,
+    Calendar,
+    Phone,
+    User,
+    Building2,
+    UserCheck,
+    Info,
+    Package,
+    Truck
+} from "lucide-react";
 
 export const ViewSalesOrderItemsModal = ({
     isOpen,
@@ -35,6 +49,15 @@ export const ViewSalesOrderItemsModal = ({
         }
     };
 
+    // Determine if this order is an In-House Manufactured Product order or a Site Assembly project order
+    const isInHouse =
+        order.orderType === 'in_house' ||
+        order.order_type === 'in_house' ||
+        (typeof order.projectName === 'string' && order.projectName.toLowerCase().startsWith('in-house')) ||
+        (typeof order.project_name === 'string' && order.project_name.toLowerCase().startsWith('in-house')) ||
+        (Array.isArray(order.items) && order.items.length > 0 && order.items.every(it => (it.fulfilment_mode || '').includes('in_house'))) ||
+        (!order.siteContactPerson && !order.siteContactNumber && (!order.projectIncharge || order.projectIncharge === 'N/A' || order.projectIncharge === 'NA'));
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
 
@@ -44,7 +67,7 @@ export const ViewSalesOrderItemsModal = ({
                 <div className="flex items-center justify-between border-b px-6 py-4 bg-gray-50">
 
                     <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                             <h2 className="text-lg font-bold text-gray-900">
                                 Sales Order Details
                             </h2>
@@ -55,6 +78,19 @@ export const ViewSalesOrderItemsModal = ({
                             }`}>
                                 {order.status || 'Pending'}
                             </span>
+
+                            {/* Order Fulfilment Type Badge */}
+                            {isInHouse ? (
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 inline-flex items-center gap-1">
+                                    <Package size={13} className="text-purple-600" />
+                                    In-House Order
+                                </span>
+                            ) : (
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1">
+                                    <Wrench size={13} className="text-blue-600" />
+                                    Site Assembly Order
+                                </span>
+                            )}
                         </div>
                         <p className="text-xs text-gray-500 mt-0.5">
                             Order ID: <span className="font-semibold text-gray-800">SO-{order.Id}</span> | Client: <span className="font-semibold text-gray-800">{order.clientName || 'N/A'}</span>
@@ -63,7 +99,7 @@ export const ViewSalesOrderItemsModal = ({
 
                     <button
                         onClick={onClose}
-                        className="p-1.5 rounded-lg hover:bg-gray-200/60 text-gray-500 hover:text-gray-800 transition"
+                        className="p-1.5 rounded-lg hover:bg-gray-200/60 text-gray-500 hover:text-gray-800 transition cursor-pointer"
                     >
                         <X size={20} />
                     </button>
@@ -78,21 +114,29 @@ export const ViewSalesOrderItemsModal = ({
 
                         <div>
                             <p className="text-[11px] font-medium text-gray-500">Order ID</p>
-                            <p className="font-bold text-gray-900 text-xs mt-0.5">
+                            <p className="font-bold text-gray-900 text-xs mt-0.5 font-mono">
                                 SO-{order.Id}
                             </p>
                         </div>
 
                         <div>
-                            <p className="text-[11px] font-medium text-gray-500">Project Incharge / Engineer</p>
-                            <p className="font-semibold text-blue-700 text-xs mt-0.5">
-                                {order.projectIncharge || 'N/A'}
+                            <p className="text-[11px] font-medium text-gray-500">
+                                {isInHouse ? 'Order / Fulfilment Type' : 'Project Incharge / Engineer'}
                             </p>
+                            {isInHouse ? (
+                                <p className="font-bold text-purple-700 text-xs mt-0.5 inline-flex items-center gap-1">
+                                    <Package size={13} /> In-House Production
+                                </p>
+                            ) : (
+                                <p className="font-semibold text-blue-700 text-xs mt-0.5">
+                                    {order.projectIncharge || 'Unassigned'}
+                                </p>
+                            )}
                         </div>
 
                         <div>
                             <p className="text-[11px] font-medium text-gray-500">PO Number</p>
-                            <p className="font-semibold text-gray-900 text-xs mt-0.5">
+                            <p className="font-semibold text-gray-900 text-xs mt-0.5 font-mono">
                                 {order.poNo || order.poNumber || 'N/A'}
                             </p>
                         </div>
@@ -106,49 +150,113 @@ export const ViewSalesOrderItemsModal = ({
 
                     </div>
 
-                    {/* Section 2: Project & Site Execution Details */}
-                    <div className="bg-slate-50/70 p-4 border border-slate-200 rounded-xl space-y-3">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider">
-                            <Wrench size={15} className="text-blue-600" />
-                            <span>Project & Site Details</span>
+                    {/* Section 2: Conditional Details based on Order Type */}
+                    {isInHouse ? (
+                        /* 🌟 IN-HOUSE ORDER DETAILS (Site details hidden) */
+                        <div className="bg-purple-50/40 p-4 border border-purple-200 rounded-xl space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-xs font-bold text-purple-900 uppercase tracking-wider">
+                                    <Building2 size={15} className="text-purple-600" />
+                                    <span>In-House Delivery & Billing Details</span>
+                                </div>
+                                <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded border border-purple-200">
+                                    Direct Warehouse Delivery
+                                </span>
+                            </div>
+
+                            <div className="p-2.5 bg-white border border-purple-100 rounded-lg text-purple-900 text-[11px] flex items-center gap-2">
+                                <Info size={14} className="text-purple-600 shrink-0" />
+                                <span>This order is for <strong>In-House Manufactured Products</strong>. It is dispatched directly to the client without site-level survey or engineer deployment.</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                                <div className="bg-white p-3 rounded-lg border border-purple-100 shadow-2xs">
+                                    <span className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1 block">
+                                        <MapPin size={11} className="text-purple-600" /> Delivery / Shipping Address
+                                    </span>
+                                    <span className="text-xs text-gray-800 block mt-1 font-medium">
+                                        {order.shippingAddress || order.siteAddress || order.site_address || 'N/A'}
+                                    </span>
+                                </div>
+
+                                <div className="bg-white p-3 rounded-lg border border-purple-100 shadow-2xs">
+                                    <span className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1 block">
+                                        <Building2 size={11} className="text-purple-600" /> Billing Address
+                                    </span>
+                                    <span className="text-xs text-gray-800 block mt-1 font-medium">
+                                        {order.billingAddress || 'N/A'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {(order.expectedDeliveryDate || order.remarks || order.projectRemarks) && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {order.expectedDeliveryDate && (
+                                        <div className="bg-white p-3 rounded-lg border border-purple-100 shadow-2xs">
+                                            <span className="text-[10px] font-semibold text-gray-400 uppercase flex items-center gap-1 block">
+                                                <Calendar size={11} className="text-purple-600" /> Expected Delivery Date
+                                            </span>
+                                            <span className="text-xs font-bold text-gray-800 block mt-1">
+                                                {formatDate(order.expectedDeliveryDate)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {(order.remarks || order.projectRemarks) && (
+                                        <div className={`bg-white p-3 rounded-lg border border-purple-100 shadow-2xs ${!order.expectedDeliveryDate ? 'md:col-span-2' : ''}`}>
+                                            <span className="text-[10px] font-semibold text-gray-400 uppercase block">Remarks / Order Notes</span>
+                                            <span className="text-xs text-gray-700 block mt-1">
+                                                {order.remarks || order.projectRemarks}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className="bg-white p-3 rounded-lg border border-slate-200">
-                                <span className="text-[10px] font-semibold text-slate-400 uppercase block">Project Name</span>
-                                <span className="text-xs font-bold text-slate-900 block mt-0.5">{order.projectName || order.project_name || 'N/A'}</span>
+                    ) : (
+                        /* 🌟 SITE PROJECT DETAILS (For Site Assembly Orders) */
+                        <div className="bg-slate-50/70 p-4 border border-slate-200 rounded-xl space-y-3">
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                <Wrench size={15} className="text-blue-600" />
+                                <span>Project & Site Details</span>
                             </div>
 
-                            <div className="bg-white p-3 rounded-lg border border-slate-200">
-                                <span className="text-[10px] font-semibold text-slate-400 uppercase block">Site Contact Person</span>
-                                <span className="text-xs font-semibold text-slate-800 block mt-0.5">{order.siteContactPerson || order.site_contact_person || 'N/A'}</span>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div className="bg-white p-3 rounded-lg border border-slate-200">
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase block">Project Name</span>
+                                    <span className="text-xs font-bold text-slate-900 block mt-0.5">{order.projectName || order.project_name || 'N/A'}</span>
+                                </div>
+
+                                <div className="bg-white p-3 rounded-lg border border-slate-200">
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase block">Site Contact Person</span>
+                                    <span className="text-xs font-semibold text-slate-800 block mt-0.5">{order.siteContactPerson || order.site_contact_person || 'N/A'}</span>
+                                </div>
+
+                                <div className="bg-white p-3 rounded-lg border border-slate-200">
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase block">Site Contact Phone</span>
+                                    <span className="text-xs font-semibold text-slate-800 block mt-0.5">{order.siteContactNumber || order.site_contact_number || 'N/A'}</span>
+                                </div>
                             </div>
 
-                            <div className="bg-white p-3 rounded-lg border border-slate-200">
-                                <span className="text-[10px] font-semibold text-slate-400 uppercase block">Site Contact Phone</span>
-                                <span className="text-xs font-semibold text-slate-800 block mt-0.5">{order.siteContactNumber || order.site_contact_number || 'N/A'}</span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                                <div className="bg-white p-3 rounded-lg border border-slate-200">
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase block">Project / Site Address (Shipping)</span>
+                                    <span className="text-xs text-slate-800 block mt-0.5">{order.shippingAddress || order.siteAddress || order.site_address || 'N/A'}</span>
+                                </div>
+
+                                <div className="bg-white p-3 rounded-lg border border-slate-200">
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase block">Billing Address</span>
+                                    <span className="text-xs text-slate-800 block mt-0.5">{order.billingAddress || 'N/A'}</span>
+                                </div>
                             </div>
+
+                            {(order.remarks || order.projectRemarks) && (
+                                <div className="bg-white p-3 rounded-lg border border-slate-200">
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase block">Remarks / Order Notes</span>
+                                    <span className="text-xs text-slate-700 block mt-0.5">{order.remarks || order.projectRemarks}</span>
+                                </div>
+                            )}
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                            <div className="bg-white p-3 rounded-lg border border-slate-200">
-                                <span className="text-[10px] font-semibold text-slate-400 uppercase block">Project / Site Address (Shipping)</span>
-                                <span className="text-xs text-slate-800 block mt-0.5">{order.shippingAddress || order.siteAddress || order.site_address || 'N/A'}</span>
-                            </div>
-
-                            <div className="bg-white p-3 rounded-lg border border-slate-200">
-                                <span className="text-[10px] font-semibold text-slate-400 uppercase block">Billing Address</span>
-                                <span className="text-xs text-slate-800 block mt-0.5">{order.billingAddress || 'N/A'}</span>
-                            </div>
-                        </div>
-
-                        {(order.remarks || order.projectRemarks) && (
-                            <div className="bg-white p-3 rounded-lg border border-slate-200">
-                                <span className="text-[10px] font-semibold text-slate-400 uppercase block">Remarks / Order Notes</span>
-                                <span className="text-xs text-slate-700 block mt-0.5">{order.remarks || order.projectRemarks}</span>
-                            </div>
-                        )}
-                    </div>
+                    )}
 
                     {/* Section 3: PO Document Preview */}
                     {poCopyUrl && (
@@ -224,7 +332,14 @@ export const ViewSalesOrderItemsModal = ({
                                             <tr key={item.itemId ?? item.Id ?? idx} className="hover:bg-gray-50">
                                                 <td className="px-4 py-2.5 text-gray-500">{idx + 1}</td>
                                                 <td className="px-4 py-2.5 text-gray-900 font-medium">
-                                                    {item.productName || item.itemName}
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{item.productName || item.itemName}</span>
+                                                        {isInHouse && (
+                                                            <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
+                                                                In-House
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-4 py-2.5 text-center text-gray-900 font-bold">
                                                     {item.qty}
@@ -249,7 +364,7 @@ export const ViewSalesOrderItemsModal = ({
                 <div className="flex justify-end border-t px-6 py-3 bg-gray-50">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-xs font-semibold transition"
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-xs font-semibold transition cursor-pointer"
                     >
                         Close
                     </button>
@@ -259,4 +374,4 @@ export const ViewSalesOrderItemsModal = ({
 
         </div>
     );
-};
+};

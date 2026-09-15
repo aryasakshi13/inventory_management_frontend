@@ -82,23 +82,35 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
 
         // Eligible for delivery:
         // 1) Not already fully delivered (fullyDeliveredOrderIds)
-        // 2) Orders with prepared BOM (for site assembly) OR Confirmed in-house manufacturing orders
+        // 2) Confirmed orders (In-House manufacturing orders, site assembly orders with prepared BOM, or any confirmed order ready for delivery)
         const eligibleOrders = ordersList
           .filter((ord) => {
             const ordId = Number(ord.Id || ord.id);
+            if (!ordId) return false;
             if (fullyDeliveredOrderIds.has(ordId)) {
               return false; // Skip already 100% delivered sales orders
             }
 
             const isConfirmed = String(ord.status ?? ord.Status ?? '').trim().toLowerCase() === 'confirmed';
+            if (!isConfirmed) return false;
+
             const prep = prepMap.get(ordId);
             const hasPreparedBOM = prep && Array.isArray(prep.items) && prep.items.length > 0;
 
-            const rawItems = Array.isArray(ord.items) ? ord.items : [];
-            const hasSiteAssembly = rawItems.some((item) => (item.fulfilment_mode || 'site_assembly') === 'site_assembly');
-            const isInHouseOnly = isConfirmed && (ord.is_in_house_manufacturing || (rawItems.length > 0 && !hasSiteAssembly));
+            const isInHouse =
+              ord.orderType === 'in_house' ||
+              ord.order_type === 'in_house' ||
+              Boolean(ord.is_in_house_manufacturing) ||
+              (typeof ord.projectName === 'string' && ord.projectName.toLowerCase().startsWith('in-house')) ||
+              (typeof ord.project_name === 'string' && ord.project_name.toLowerCase().startsWith('in-house'));
 
-            return hasPreparedBOM || isInHouseOnly;
+            // Business Logic:
+            // 1) In-House Manufacturing Orders: Direct Delivery once Confirmed (BOM preparation skipped)
+            // 2) Site Assembly / Delivery Orders: MANDATORY to prepare BOM first (must have prepared BOM items)
+            if (isInHouse) {
+              return true;
+            }
+            return Boolean(hasPreparedBOM);
           })
           .map((ord) => {
             const ordId = Number(ord.Id || ord.id);
@@ -107,7 +119,8 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
               ...ord,
               preparationId: prep ? prep.id : null,
             };
-          });
+          })
+          .sort((a, b) => Number(b.Id || b.id || 0) - Number(a.Id || a.id || 0));
 
         setSalesOrders(eligibleOrders);
       } catch (err) {
@@ -350,9 +363,15 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
                   const oId = ord.Id || ord.id;
                   const poLabel = ord.poNo ? `(PO: ${ord.poNo})` : '';
                   const clientLabel = ord.clientName || ord.companyName || 'Customer';
+                  const isInHouse =
+                    ord.orderType === 'in_house' ||
+                    ord.order_type === 'in_house' ||
+                    Boolean(ord.is_in_house_manufacturing) ||
+                    (typeof ord.projectName === 'string' && ord.projectName.toLowerCase().startsWith('in-house'));
+                  const typeBadge = isInHouse ? ' • [In-House]' : '';
                   return (
                     <option key={oId} value={oId}>
-                      SO-{oId} {poLabel} - {clientLabel}
+                      SO-{oId} {poLabel} - {clientLabel}{typeBadge}
                     </option>
                   );
                 })}

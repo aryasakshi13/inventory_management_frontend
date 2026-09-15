@@ -134,7 +134,15 @@ export const SalesOrderTable = ({
                       {order.clientName}
                     </td>
                     <td className="py-3 px-4 text-gray-800 font-medium max-w-[160px] truncate" title={order.projectIncharge}>
-                      {order.projectIncharge || '—'}
+                      {order.projectIncharge && order.projectIncharge !== 'N/A' && order.projectIncharge !== 'NA' ? (
+                        order.projectIncharge
+                      ) : (order.orderType === 'in_house' || order.projectName?.toLowerCase()?.startsWith('in-house')) ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
+                          📦 In-House
+                        </span>
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td className="py-3 px-4 text-gray-600 font-mono">
                       {order.poDate ? new Date(order.poDate).toLocaleDateString('en-GB') : '—'}
