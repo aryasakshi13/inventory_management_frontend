@@ -143,8 +143,36 @@ export const ProductionDetailDrawer = ({ isOpen, taskId, initialTab = 'stage1', 
   const displayDamaged = (rawRejected > 0) ? rawRejected : Math.max(0, proposed - finished);
   const progressPercent = Math.min(100, Math.round((finished / proposed) * 100));
 
-  const items = task?.items || [];
-  const allMaterialsIssued = items.length > 0 && items.every((i) => parseFloat(i.issued_qty) >= parseFloat(i.required_qty));
+  const rawItems = task?.items || [];
+  // Calculate cumulative issued quantities across all dispatch batches
+  const items = rawItems.map((it) => {
+    let logTotal = 0;
+    if (Array.isArray(task?.dispatch_logs) && task.dispatch_logs.length > 0) {
+      task.dispatch_logs.forEach((log) => {
+        const rawSummary = Array.isArray(log.items_summary)
+          ? log.items_summary
+          : typeof log.items_summary === 'string'
+            ? (() => { try { return JSON.parse(log.items_summary); } catch { return []; } })()
+            : [];
+        rawSummary.forEach((ri) => {
+          if (
+            (ri.item_id && String(ri.item_id) === String(it.id)) ||
+            (ri.item_name && it.item_name && ri.item_name.toLowerCase().trim() === it.item_name.toLowerCase().trim())
+          ) {
+            logTotal += (parseFloat(ri.qty ?? ri.quantity) || 0);
+          }
+        });
+      });
+    }
+    const currentIssued = parseFloat(it.issued_qty) || 0;
+    const effectiveIssued = logTotal > 0 ? Math.max(currentIssued, logTotal) : currentIssued;
+    return {
+      ...it,
+      issued_qty: effectiveIssued
+    };
+  });
+
+  const allMaterialsIssued = items.length > 0 && items.every((i) => parseFloat(i.issued_qty) >= (parseFloat(i.required_qty) - 0.0001));
   const someMaterialsIssued = items.some((i) => parseFloat(i.issued_qty) > 0);
   const hasDispatchLogs = Array.isArray(task?.dispatch_logs) && task.dispatch_logs.length > 0;
   const hasOutputRecord = (
@@ -171,7 +199,7 @@ export const ProductionDetailDrawer = ({ isOpen, taskId, initialTab = 'stage1', 
     const req = parseFloat(it.required_qty) || 0;
     const issued = parseFloat(it.issued_qty) || 0;
     const perUnit = (req > 0 && proposed > 0) ? (req / proposed) : 0;
-    return perUnit > 0 && issued < perUnit;
+    return perUnit > 0 && issued < (perUnit - 0.0001);
   });
 
   const isProductionBlocked = items.length > 0 && maxProducibleFromIssued === 0;
