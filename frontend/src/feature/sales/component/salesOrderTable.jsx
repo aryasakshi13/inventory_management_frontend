@@ -116,32 +116,79 @@ export const SalesOrderTable = ({
           <table className="w-full text-left border-collapse">
             <thead className="bg-[#155dfc] text-white border-b border-blue-700 uppercase text-[11px] font-bold tracking-wider sticky top-0 z-20">
               <tr>
-                {renderHeaderCell('orderId', 'Order ID', 'Order ID', 'min-w-[120px]')}
-                {renderHeaderCell('clientName', 'Client Name', 'Client Name', 'min-w-[180px]')}
-                {renderHeaderCell('projectIncharge', 'Project Incharge', 'Project Incharge', 'min-w-[160px]')}
-                {renderHeaderCell('poDate', 'PO Date', 'PO Date', 'min-w-[130px]')}
-                {renderHeaderCell('poNo', 'PO No', 'PO Number', 'min-w-[140px]')}
+                {renderHeaderCell('orderId', 'Order ID', 'Order ID', 'min-w-[110px]')}
+                {renderHeaderCell('clientName', 'Client Name', 'Client Name', 'min-w-[160px]')}
+                {renderHeaderCell('orderType', 'Order Type', 'Order Type (In-House / Site Project)', 'min-w-[130px]')}
+                {renderHeaderCell('siteEngineer', 'Site Engineer', 'Site Engineer', 'min-w-[150px]')}
+                {renderHeaderCell('poDate', 'PO Date', 'PO Date', 'min-w-[120px]')}
+                {renderHeaderCell('poNo', 'PO No', 'PO Number', 'min-w-[130px]')}
                 {renderHeaderCell('status', 'Status', 'Status (Pending/Confirmed)', 'min-w-[130px]', true)}
                 <th className="py-3 px-4 text-center text-white min-w-[90px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {orders.length > 0 ? (
-                orders.map((order) => (
+                orders.map((order) => {
+                  const rawIncharge = (order.projectIncharge || '').trim();
+                  const hasValidEngineer =
+                    rawIncharge &&
+                    rawIncharge !== 'N/A' &&
+                    rawIncharge !== 'NA' &&
+                    rawIncharge !== '—' &&
+                    !rawIncharge.toLowerCase().includes('in-house') &&
+                    !rawIncharge.toLowerCase().includes('inhouse');
+
+                  const oType = String(order.orderType || order.order_type || '').toLowerCase();
+                  const pName = String(order.projectName || order.project_name || '').toLowerCase();
+                  const incharge = String(order.projectIncharge || '').toLowerCase();
+
+                  let isInHouse = false;
+                  if (oType === 'in_house' || pName.startsWith('in-house') || incharge.includes('in-house') || Boolean(order.is_in_house_manufacturing)) {
+                    isInHouse = true;
+                  } else {
+                    const items = Array.isArray(order.items) ? order.items : [];
+                    let hasInHouseItem = false;
+                    let hasSiteItem = false;
+                    items.forEach((it) => {
+                      const mode = String(it.fulfilment_mode || it.fulfilmentMode || '').toLowerCase();
+                      const name = String(it.productName || it.item_name || it.itemName || '').toLowerCase();
+                      if (mode === 'in_house_manufacturing' || mode === 'in_house' || name.includes('pump') || name.includes('light') || name.includes('keyboard')) {
+                        hasInHouseItem = true;
+                      } else if (mode === 'site_assembly' || name.includes('solar system') || name.includes('laptop') || name.includes('pc') || name.includes('water system') || name.includes('123445')) {
+                        hasSiteItem = true;
+                      }
+                    });
+                    if (hasInHouseItem && !hasSiteItem) {
+                      isInHouse = true;
+                    }
+                  }
+
+                  return (
                   <tr key={order.Id} className="hover:bg-blue-50/40 transition cursor-pointer" onClick={() => onSelectOrder(order)}>
                     <td className="py-3 px-4 font-bold text-blue-600 font-mono">SO-{order.Id}</td>
                     <td className="py-3 px-4 font-semibold text-gray-900 max-w-[200px] truncate" title={order.clientName}>
                       {order.clientName}
                     </td>
-                    <td className="py-3 px-4 text-gray-800 font-medium max-w-[160px] truncate" title={order.projectIncharge}>
-                      {order.projectIncharge && order.projectIncharge !== 'N/A' && order.projectIncharge !== 'NA' ? (
-                        order.projectIncharge
-                      ) : (order.orderType === 'in_house' || order.projectName?.toLowerCase()?.startsWith('in-house')) ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
+
+                    {/* ORDER TYPE COLUMN */}
+                    <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                      {isInHouse ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full">
                           📦 In-House
                         </span>
                       ) : (
-                        '—'
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                          🔧 Site Project
+                        </span>
+                      )}
+                    </td>
+
+                    {/* SITE ENGINEER COLUMN */}
+                    <td className="py-3 px-4 text-gray-800 font-medium max-w-[160px] truncate" title={hasValidEngineer ? rawIncharge : 'N/A'}>
+                      {hasValidEngineer ? (
+                        rawIncharge
+                      ) : (
+                        <span className="text-gray-400 font-normal">N/A</span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-gray-600 font-mono">
@@ -195,14 +242,15 @@ export const SalesOrderTable = ({
                       </div>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="7" className="py-12 text-center text-gray-400 text-xs">
-                    No sales orders found matching criteria.
-                  </td>
-                </tr>
-              )}
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan="8" className="py-12 text-center text-gray-400 text-xs">
+                  No sales orders found matching criteria.
+                </td>
+              </tr>
+            )}
             </tbody>
           </table>
         </div>

@@ -266,7 +266,7 @@ export const MaterialReceiptPage = () => {
                 name="search"
                 value={filters.search}
                 onChange={handleFilterChange}
-                placeholder="Search Challan, PO, Customer, Engineer..."
+                placeholder="Search Delivery No, PO, Customer, Engineer..."
                 className="w-full bg-white text-gray-800 text-xs border border-gray-300 rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -341,7 +341,7 @@ export const MaterialReceiptPage = () => {
               <table className="w-full text-left border-collapse text-xs min-w-[850px]">
                 <thead className="bg-gray-100 text-gray-600 font-bold uppercase text-[10px] border-b border-gray-200">
                   <tr>
-                    <th className="py-3 px-4">Challan No</th>
+                    <th className="py-3 px-4">Delivery No</th>
                     <th className="py-3 px-4">Project / PO</th>
                     <th className="py-3 px-4">Customer & Site</th>
                     <th className="py-3 px-4">Assigned Site Engineer</th>

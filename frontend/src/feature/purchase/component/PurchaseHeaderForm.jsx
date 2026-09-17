@@ -57,27 +57,28 @@ export const PurchaseHeaderForm = ({ headerData, updateHeader, errors = {} }) =>
   return (
     <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs space-y-4 text-xs">
       <h3 className="font-bold text-gray-800 uppercase tracking-wider text-[11px]">Header Details</h3>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-gray-600 font-semibold mb-1">
-            Bill No <span className="text-rose-500">*</span>
+            Invoice No <span className="text-rose-500">*</span>
           </label>
           <input
             type="text"
-            placeholder="e.g. BILL-2026-001"
-            value={headerData.bill_no || ''}
+            placeholder="Supplier Invoice #"
+            value={headerData.invoice_no || ''}
             onChange={(e) => {
               const cleanVal = e.target.value.replace(/[^a-zA-Z0-9\-_]/g, '');
+              updateHeader('invoice_no', cleanVal);
               updateHeader('bill_no', cleanVal);
             }}
-            className={`w-full bg-white text-gray-900 border rounded-lg p-2 font-mono font-bold focus:outline-none transition ${
-              errors.bill_no
+            className={`w-full bg-white text-gray-900 border rounded-lg p-2 focus:outline-none transition ${
+              errors.invoice_no
                 ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-400'
                 : 'border-gray-300 focus:ring-2 focus:ring-blue-500'
             }`}
           />
-          {errors.bill_no && (
-            <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.bill_no}</p>
+          {errors.invoice_no && (
+            <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.invoice_no}</p>
           )}
         </div>
 
@@ -127,29 +128,6 @@ export const PurchaseHeaderForm = ({ headerData, updateHeader, errors = {} }) =>
         </div>
 
         <div>
-          <label className="block text-gray-600 font-semibold mb-1">
-            Invoice No <span className="text-rose-500">*</span>
-          </label>
-          <input
-            type="text"
-            placeholder="Supplier Invoice #"
-            value={headerData.invoice_no || ''}
-            onChange={(e) => {
-              const cleanVal = e.target.value.replace(/[^a-zA-Z0-9\-_]/g, '');
-              updateHeader('invoice_no', cleanVal);
-            }}
-            className={`w-full bg-white text-gray-900 border rounded-lg p-2 focus:outline-none transition ${
-              errors.invoice_no
-                ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-400'
-                : 'border-gray-300 focus:ring-2 focus:ring-blue-500'
-            }`}
-          />
-          {errors.invoice_no && (
-            <p className="text-rose-500 text-[11px] mt-1 font-medium">{errors.invoice_no}</p>
-          )}
-        </div>
-
-        <div>
           <label className="block text-gray-600 font-semibold mb-1">Invoice Date</label>
           <input
             type="date"
@@ -159,8 +137,8 @@ export const PurchaseHeaderForm = ({ headerData, updateHeader, errors = {} }) =>
           />
         </div>
 
-        {/* //image OR PDF upload  */}
-        <div>
+        {/* image OR PDF upload */}
+        <div className="md:col-span-2">
           <label className="block text-gray-600 font-semibold mb-1">Upload Invoice (PDF / Image)</label>
           <input
             type="file"
@@ -183,18 +161,6 @@ export const PurchaseHeaderForm = ({ headerData, updateHeader, errors = {} }) =>
               View Uploaded Invoice
             </a>
           )}
-        </div>
-
-
-        <div className="md:col-span-2">
-          <label className="block text-gray-600 font-semibold mb-1">Remarks</label>
-          <input
-            type="text"
-            placeholder="Add notes or remarks..."
-            value={headerData.remarks || ''}
-            onChange={(e) => updateHeader('remarks', e.target.value)}
-            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          />
         </div>
       </div>
     </div>

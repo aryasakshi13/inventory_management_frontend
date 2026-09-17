@@ -28,8 +28,9 @@ export const getDeliveryChallanById = async (id) => {
   return response.data;
 };
 
-export const fetchOrderDispatchSummary = async (orderId) => {
+export const fetchOrderDispatchSummary = async (orderId, params = {}) => {
   const response = await axios.get(`${BASE_URL}/order-summary/${orderId}`, {
+    params,
     withCredentials: true,
   });
   return response.data;

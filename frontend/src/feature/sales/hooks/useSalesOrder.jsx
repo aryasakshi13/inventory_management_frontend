@@ -80,9 +80,42 @@ export const useSalesOrder = () => {
         }
       }
 
-      // Project Incharge
-      if (inlineFilters.projectIncharge) {
-        const targetIncharge = inlineFilters.projectIncharge.toLowerCase().trim();
+      // Order Type
+      if (inlineFilters.orderType) {
+        const targetType = inlineFilters.orderType.toLowerCase().trim();
+        const oType = String(order.orderType || order.order_type || '').toLowerCase();
+        const pName = String(order.projectName || order.project_name || '').toLowerCase();
+        const incharge = String(order.projectIncharge || '').toLowerCase();
+
+        let isInHouse = false;
+        if (oType === 'in_house' || pName.startsWith('in-house') || incharge.includes('in-house') || Boolean(order.is_in_house_manufacturing)) {
+          isInHouse = true;
+        } else {
+          const items = Array.isArray(order.items) ? order.items : [];
+          let hasInHouseItem = false;
+          let hasSiteItem = false;
+          items.forEach((it) => {
+            const mode = String(it.fulfilment_mode || it.fulfilmentMode || '').toLowerCase();
+            const name = String(it.productName || it.item_name || it.itemName || '').toLowerCase();
+            if (mode === 'in_house_manufacturing' || mode === 'in_house' || name.includes('pump') || name.includes('light') || name.includes('keyboard')) {
+              hasInHouseItem = true;
+            } else if (mode === 'site_assembly' || name.includes('solar system') || name.includes('laptop') || name.includes('pc') || name.includes('water system') || name.includes('123445')) {
+              hasSiteItem = true;
+            }
+          });
+          if (hasInHouseItem && !hasSiteItem) {
+            isInHouse = true;
+          }
+        }
+        const typeLabel = isInHouse ? 'in-house' : 'site project';
+        if (!typeLabel.includes(targetType)) {
+          return false;
+        }
+      }
+
+      // Site Engineer / Project Incharge
+      if (inlineFilters.siteEngineer || inlineFilters.projectIncharge) {
+        const targetIncharge = (inlineFilters.siteEngineer || inlineFilters.projectIncharge).toLowerCase().trim();
         const inchargeName = (order.projectIncharge ?? '').toString().toLowerCase();
         if (!inchargeName.includes(targetIncharge)) {
           return false;

@@ -193,7 +193,7 @@ export const DeliveryList = ({ onAddNew }) => {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
             <Truck size={22} className="text-blue-600" />
-            Delivery Challans
+            Deliveries
           </h1>
           <p className="text-xs text-gray-500">Track outward shipments, dispatch quantities, and delivery status</p>
         </div>
@@ -219,7 +219,7 @@ export const DeliveryList = ({ onAddNew }) => {
             }`}
           >
             <Package size={15} />
-            <span>Site Material Deliveries</span>
+            <span>Site Delivery (Items)</span>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
               activeTab === 'site_material' ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-700'
             }`}>
@@ -237,7 +237,7 @@ export const DeliveryList = ({ onAddNew }) => {
             }`}
           >
             <Factory size={15} />
-            <span>Direct Product Deliveries</span>
+            <span>Direct Product Delivery (Finished Goods)</span>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
               activeTab === 'in_house' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-200 text-gray-700'
             }`}>
@@ -257,7 +257,7 @@ export const DeliveryList = ({ onAddNew }) => {
           {/* SEARCH INPUT */}
           <div>
             <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">
-              Search Challan
+              Search Delivery
             </label>
             <div className="relative">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -266,7 +266,7 @@ export const DeliveryList = ({ onAddNew }) => {
                 name="search"
                 value={filters.search}
                 onChange={handleFilterChange}
-                placeholder="Challan, Customer, Phone..."
+                placeholder="Delivery No, Customer, Phone..."
                 className="w-full bg-white text-gray-800 text-xs border border-gray-300 rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -355,10 +355,10 @@ export const DeliveryList = ({ onAddNew }) => {
         ) : filteredDeliveries.length === 0 ? (
           <div className="p-8 text-center text-xs text-gray-500">
             {hasActiveFilters
-              ? 'No delivery challans match the selected filters.'
+              ? 'No deliveries match the selected filters.'
               : activeTab === 'in_house'
-              ? 'No direct product delivery challans found.'
-              : 'No site material delivery challans found.'}
+              ? 'No direct product deliveries found.'
+              : 'No site material deliveries found.'}
           </div>
         ) : (
           <>
@@ -366,7 +366,7 @@ export const DeliveryList = ({ onAddNew }) => {
               <table className="w-full text-left border-collapse text-xs min-w-[850px]">
                 <thead className="bg-gray-100 text-gray-600 font-bold uppercase text-[10px] border-b border-gray-200">
                   <tr>
-                    <th className="py-3 px-4">Challan No</th>
+                    <th className="py-3 px-4">Delivery No</th>
                     <th className="py-3 px-4">Customer</th>
                     <th className="py-3 px-4">Dispatch Date</th>
                     <th className="py-3 px-4 text-right">
@@ -411,7 +411,7 @@ export const DeliveryList = ({ onAddNew }) => {
                         <div className="flex flex-col items-end">
                           <div className="font-mono font-bold text-gray-900 text-sm">
                             {item.total_delivered_qty}
-                            <span className="text-[10px] text-gray-400 font-normal ml-1">in challan</span>
+                            <span className="text-[10px] text-gray-400 font-normal ml-1">in delivery</span>
                           </div>
 
                           {Number(item.prior_delivered_qty || 0) > 0 && (
@@ -483,7 +483,7 @@ export const DeliveryList = ({ onAddNew }) => {
                       <td className="py-3 px-4 text-center">
                         <button
                           onClick={() => handleViewChallan(item)}
-                          title="View Challan Details"
+                          title="View Delivery Details"
                           className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition cursor-pointer"
                         >
                           <Eye size={16} />

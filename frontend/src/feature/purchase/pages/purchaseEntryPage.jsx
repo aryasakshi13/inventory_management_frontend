@@ -67,15 +67,6 @@ export const PurchaseEntryPage = ({ onCancel, onSaveSuccess }) => {
     // VALIDATION
     // =========================================================
 
-    // Bill No
-    if (!headerData.bill_no?.trim()) {
-      newErrors.bill_no = 'Bill No is required.';
-    } else if (!/^[a-zA-Z0-9\-_]+$/.test(headerData.bill_no.trim())) {
-      newErrors.bill_no = 'Bill No can only contain letters, numbers, hyphens (-), and underscores (_). Slashes (/) and other symbols are not allowed.';
-    } else if (!/[a-zA-Z0-9]/.test(headerData.bill_no.trim())) {
-      newErrors.bill_no = 'Bill No must contain at least one letter or number and cannot be only symbols.';
-    }
-
     // Vendor Name
     if (!headerData.vendor_name?.trim()) {
       newErrors.vendor_name = 'Vendor Name is required.';
@@ -167,7 +158,7 @@ export const PurchaseEntryPage = ({ onCancel, onSaveSuccess }) => {
       // -----------------------------
       // Purchase Header
       // -----------------------------
-      bill_no: headerData.bill_no,
+      bill_no: headerData.invoice_no,
       vendor_name: headerData.vendor_name,
       vendor_phone: headerData.vendor_phone || '',
       vendor_email: headerData.vendor_email || '',
@@ -201,7 +192,7 @@ export const PurchaseEntryPage = ({ onCancel, onSaveSuccess }) => {
       // -----------------------------
       // Other Details
       // -----------------------------
-      remarks: headerData.remarks || '',
+      remarks: '',
 
       created_by: 1,
 
@@ -243,7 +234,7 @@ export const PurchaseEntryPage = ({ onCancel, onSaveSuccess }) => {
       console.log('API call finished, response:', response);
 
       if (response?.success !== false) {
-        alert(`Purchase Bill ${headerData.bill_no} saved successfully!`);
+        alert(`Purchase Invoice ${headerData.invoice_no} saved successfully!`);
 
         if (saveAndNew) {
           resetForm();

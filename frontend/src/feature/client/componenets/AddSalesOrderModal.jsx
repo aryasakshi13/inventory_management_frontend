@@ -216,17 +216,14 @@ export const AddSalesOrderModal = ({
     const sampleData = [
       {
         'Product Name': products.length > 0 ? products[0].product_name : 'Solar PV Module',
-        'Description': 'Mono PERC 540 Wp Half Cut',
         'Qty': 10
       },
       {
         'Product Name': products.length > 1 ? products[1].product_name : 'Solar Grid Inverter',
-        'Description': '10 kW Three Phase Dual MPPT',
         'Qty': 1
       },
       {
         'Product Name': products.length > 2 ? products[2].product_name : 'ACDB / DCDB Box',
-        'Description': 'IP65 Weatherproof Enclosure 4 In 4 Out',
         'Qty': 2
       }
     ];
@@ -298,7 +295,7 @@ export const AddSalesOrderModal = ({
         .filter((item) => item.productName);
 
       if (!uploadedItems.length) {
-        alert('No valid items found. Please make sure your file contains Product Name, Description and Qty columns.');
+        alert('No valid items found. Please make sure your file contains Product Name and Qty columns.');
         e.target.value = '';
         return;
       }
@@ -411,20 +408,6 @@ export const AddSalesOrderModal = ({
           break;
         }
         seenProducts.add(key);
-
-        // 0-Stock check ONLY for in-house manufacturing orders
-        if (orderType === 'in_house') {
-          const matchedProd = products.find((p) => (p.product_name || '').toLowerCase().trim() === key);
-          const stock = Number(matchedProd?.store_stock || 0);
-          if (!matchedProd || stock <= 0) {
-            newErrors.items = `Cannot create Sales Order: In-house manufactured product "${prodName}" has 0 finished stock in Store (Out of Stock). Please complete its Production first.`;
-            break;
-          }
-          if (qty > stock) {
-            newErrors.items = `Cannot create Sales Order: Ordered quantity (${qty}) for "${prodName}" exceeds available finished stock (${stock}) in Store.`;
-            break;
-          }
-        }
       }
     }
 
@@ -1119,17 +1102,15 @@ export const AddSalesOrderModal = ({
                         })
                         .map((p) => {
                           const stockNum = Number(p.store_stock ?? 0);
-                          const isOutOfStock = orderType === 'in_house' && stockNum <= 0;
                           return (
                             <option
                               key={p.id}
                               value={p.product_name}
-                              disabled={isOutOfStock}
-                              className={isOutOfStock ? 'text-red-500 font-semibold' : 'text-gray-900'}
+                              className={stockNum <= 0 ? 'text-amber-600 font-medium' : 'text-gray-900'}
                             >
                               {p.product_name}
                               {orderType === 'in_house'
-                                ? ` (Stock: ${stockNum}${isOutOfStock ? ' - Out of Stock' : ''})`
+                                ? ` (Stock: ${stockNum})`
                                 : ''}
                             </option>
                           );
@@ -1167,7 +1148,7 @@ export const AddSalesOrderModal = ({
                     </button>
                   </div>
 
-                  {/* 0-Stock / Insufficient Stock Warning Banner under row ONLY for in_house */}
+                  {/* Stock notice badge under row for in_house */}
                   {orderType === 'in_house' && item.productName && (() => {
                     const matched = products.find(p => (p.product_name || '').toLowerCase().trim() === (item.productName || '').toLowerCase().trim());
                     const stock = Number(matched?.store_stock ?? 0);
@@ -1175,17 +1156,17 @@ export const AddSalesOrderModal = ({
 
                     if (!matched || stock <= 0) {
                       return (
-                        <div className="col-span-12 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-lg text-[11px] text-rose-700 font-semibold flex items-center gap-1.5">
-                          <AlertCircle size={13} className="text-rose-600 shrink-0" />
-                          <span>This in-house manufactured product has <strong>0 finished stock</strong> in Store. Pehle iski <strong>Production</strong> karein, tabhi Sales Order create ho sakta hai.</span>
+                        <div className="col-span-12 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-800 font-medium flex items-center gap-1.5">
+                          <AlertCircle size={13} className="text-amber-600 shrink-0" />
+                          <span>Current Store Stock: <strong>0 (Out of Stock)</strong>. Sales order can be saved; delivery will require stock/production before dispatch.</span>
                         </div>
                       );
                     }
                     if (qty > stock) {
                       return (
-                        <div className="col-span-12 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-800 font-semibold flex items-center gap-1.5">
-                          <AlertCircle size={13} className="text-amber-600 shrink-0" />
-                          <span>Ordered Quantity ({qty}) exceeds available store stock ({stock}). Maximum orderable quantity right now is {stock}.</span>
+                        <div className="col-span-12 px-2.5 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-[11px] text-blue-800 font-medium flex items-center gap-1.5">
+                          <AlertCircle size={13} className="text-blue-600 shrink-0" />
+                          <span>Current Available Stock: <strong>{stock}</strong> (Order Qty: {qty}). Delivery dispatch will be allowed up to available warehouse stock.</span>
                         </div>
                       );
                     }

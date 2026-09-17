@@ -13,7 +13,13 @@ import {
   Cpu,
   Boxes,
   User,
-  X
+  FileText,
+  X,
+  ChevronDown,
+  ChevronRight,
+  Store,
+  Box,
+  ScrollText
 } from "lucide-react";
 import { useNavigate, useLocation, Routes, Route, Navigate } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
@@ -27,11 +33,14 @@ import { StorePage } from "../feature/storeItems/pages/storePage";
 import { DeliveryList } from "../feature/delivery/pages/DeliveryList";
 import { CreateDeliveryPage } from "../feature/delivery/pages/CreateDeliveryPage";
 import { MaterialReceiptPage } from "../feature/delivery/pages/MaterialReceiptPage";
+import { ChallanListPage } from "../feature/challan/pages/ChallanListPage";
+import { CreateChallanPage } from "../feature/challan/pages/CreateChallanPage";
 import { PurchaseEntryPage } from "@/feature/purchase/pages/purchaseEntryPage";
 import { EmployeeListPage } from "../feature/employee/pages/EmployeeListPage";
 import { BrandListPage } from "../feature/brand/pages/BrandListPage";
 import { UserProfilePage } from "../feature/employee/pages/UserProfilePage";
 import { ProductionListPage } from "../feature/production/pages/ProductionListPage";
+import { QuotationListPage } from "../feature/quotation/pages/QuotationListPage";
 import BOMMainPage from "../feature/bom/pages/BOMMainPage";
 import ProductTab from "../feature/product/Product";
 
@@ -39,6 +48,7 @@ const MainModule = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState({ Stores: true });
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -62,10 +72,37 @@ const MainModule = () => {
       allowedRoles: ["sales", "store manager", "Admin", "Super Admin", "site engineer"],
     },
     {
-      name: "Store Items",
+      name: "Store",
       path: "store",
-      icon: Package,
+      icon: Store,
       allowedRoles: ["sales", "store manager", "Admin", "Super Admin"],
+      subItems: [
+        {
+          name: "Store Master",
+          path: "store",
+          icon: Package,
+        },
+        {
+          name: "Material Requests",
+          path: "store/material-requests",
+          icon: ClipboardList,
+        },
+        {
+          name: "Dispatch Logs",
+          path: "store/dispatch-history",
+          icon: Truck,
+        },
+        {
+          name: "Finished Goods",
+          path: "store/finished-goods",
+          icon: Box,
+        },
+        {
+          name: "Damage & Returns",
+          path: "store/damage-returns",
+          icon: FileText,
+        },
+      ],
     },
     {
       name: "Product Master",
@@ -92,6 +129,12 @@ const MainModule = () => {
       allowedRoles: ["sales", "store manager", "Admin", "Super Admin"],
     },
     {
+      name: "Quotations",
+      path: "quotations",
+      icon: FileText,
+      allowedRoles: ["sales", "store manager", "Admin", "Super Admin"],
+    },
+    {
       name: "Sales Orders",
       path: "sales-orders",
       icon: ShoppingBag,
@@ -107,6 +150,12 @@ const MainModule = () => {
       name: "Delivery",
       path: "delivery",
       icon: Truck,
+      allowedRoles: ["sales", "store manager", "Admin", "Super Admin"],
+    },
+    {
+      name: "Challan",
+      path: "challan",
+      icon: ScrollText,
       allowedRoles: ["sales", "store manager", "Admin", "Super Admin"],
     },
     {
@@ -132,18 +181,56 @@ const MainModule = () => {
   const currentSubPath = location.pathname.replace(/^\/pages\/mainModule\/?/, "");
   const isProfileActive = currentSubPath === "profile" || location.pathname.endsWith("/profile");
 
-  const activeTab =
-    location.pathname === "/pages/mainModule" ||
-    location.pathname === "/pages/mainModule/"
-      ? "Dashboard"
-      : isProfileActive
-      ? "User Profile"
-      : menuItems.find(
-          (item) =>
-            item.path &&
-            (currentSubPath === item.path ||
-              currentSubPath.startsWith(`${item.path}/`))
-        )?.name || "Dashboard";
+  // Keep Store expanded if current path is under store
+  useEffect(() => {
+    if (currentSubPath.startsWith("store")) {
+      setExpandedMenus((prev) => ({ ...prev, Store: true, Stores: true }));
+    }
+  }, [currentSubPath]);
+
+  const toggleSubMenu = (menuName) => {
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [menuName]: !prev[menuName],
+    }));
+  };
+
+  const getActiveTabTitle = () => {
+    if (
+      location.pathname === "/pages/mainModule" ||
+      location.pathname === "/pages/mainModule/"
+    ) {
+      return "Dashboard";
+    }
+    if (isProfileActive) return "User Profile";
+
+    if (currentSubPath.startsWith("store")) {
+      return "Store";
+    }
+
+    for (const item of menuItems) {
+      if (item.subItems) {
+        const foundSub = item.subItems.find(
+          (sub) =>
+            currentSubPath === sub.path ||
+            (sub.path !== "store" && currentSubPath.startsWith(`${sub.path}`)) ||
+            (sub.path === "store" && (currentSubPath === "store" || currentSubPath === "store/store-master"))
+        );
+        if (foundSub) {
+          return item.name;
+        }
+      }
+      if (
+        item.path &&
+        (currentSubPath === item.path || currentSubPath.startsWith(`${item.path}/`))
+      ) {
+        return item.name;
+      }
+    }
+    return "Dashboard";
+  };
+
+  const activeTab = getActiveTabTitle();
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-900 text-xs">
@@ -187,25 +274,84 @@ const MainModule = () => {
         <div className="flex-1 overflow-y-auto pr-1 space-y-1 min-h-0 custom-scrollbar">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isItemActive =
-              activeTab === item.name ||
+            const hasSub = Array.isArray(item.subItems) && item.subItems.length > 0;
+            const isParentActive =
               currentSubPath === item.path ||
-              currentSubPath.startsWith(`${item.path}/`);
+              currentSubPath.startsWith(`${item.path}/`) ||
+              (hasSub && item.subItems.some((sub) => currentSubPath === sub.path || currentSubPath.startsWith(`${sub.path}`)));
+            const isExpanded = !!expandedMenus[item.name];
+
+            if (hasSub) {
+              return (
+                <div key={item.name} className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleSubMenu(item.name)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all cursor-pointer text-xs font-semibold ${
+                      isParentActive
+                        ? "bg-slate-800 text-white border-l-2 border-blue-500"
+                        : "hover:bg-slate-800 text-slate-300 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <Icon size={16} className={isParentActive ? "text-blue-400" : "text-slate-400"} />
+                      <span className="truncate">{item.name}</span>
+                    </div>
+                    <span className="text-slate-400 p-0.5">
+                      {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </span>
+                  </button>
+
+                  {/* Submenu Items */}
+                  {isExpanded && (
+                    <div className="ml-3 pl-2.5 border-l border-slate-800 space-y-0.5 animate-in fade-in duration-200">
+                      {item.subItems.map((sub) => {
+                        const SubIcon = sub.icon || Package;
+                        const isSubActive =
+                          sub.path === "store"
+                            ? currentSubPath === "store" || currentSubPath === "store/store-master"
+                            : currentSubPath === sub.path || currentSubPath.startsWith(`${sub.path}`);
+
+                        return (
+                          <button
+                            key={sub.name}
+                            type="button"
+                            onClick={() => {
+                              navigate(`/pages/mainModule/${sub.path}`);
+                              setIsSidebarOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-[11px] text-left font-medium ${
+                              isSubActive
+                                ? "bg-blue-600 text-white font-semibold shadow-xs"
+                                : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
+                            }`}
+                          >
+                            <SubIcon size={13} className={isSubActive ? "text-white" : "text-slate-500"} />
+                            <span className="truncate">{sub.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
 
             return (
               <button
                 key={item.name}
+                type="button"
                 onClick={() => {
                   navigate(`/pages/mainModule/${item.path}`);
                   setIsSidebarOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-pointer text-xs font-semibold ${
-                  isItemActive
+                  isParentActive
                     ? "bg-blue-600 text-white shadow-md shadow-blue-900/30"
                     : "hover:bg-slate-800 text-slate-300 hover:text-white"
                 }`}
               >
-                <Icon size={16} className={isItemActive ? "text-white" : "text-slate-400"} />
+                <Icon size={16} className={isParentActive ? "text-white" : "text-slate-400"} />
                 <span className="truncate">{item.name}</span>
               </button>
             );
@@ -274,10 +420,17 @@ const MainModule = () => {
 
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="store" element={<StorePage />} />
+            <Route path="store/store-master" element={<StorePage />} />
+            <Route path="store/material-requests" element={<StorePage />} />
+            <Route path="store/dispatch-history" element={<StorePage />} />
+            <Route path="store/finished-goods" element={<StorePage />} />
+            <Route path="store/damage-returns" element={<StorePage />} />
+            <Route path="store/damage-reports" element={<StorePage />} />
             <Route path="products" element={<ProductTab />} />
 
             <Route path="clients/:clientId" element={<ClientDetailPage />} />
             <Route path="clients" element={<ClientListPage />} />
+            <Route path="quotations" element={<QuotationListPage />} />
             <Route path="sales-orders" element={<SalesOrderPage />} />
 
             <Route path="bom" element={<BOMMainPage />} />
@@ -314,6 +467,24 @@ const MainModule = () => {
                 <CreateDeliveryPage
                   onBack={() => navigate("/pages/mainModule/delivery")}
                   onSuccess={() => navigate("/pages/mainModule/delivery")}
+                />
+              }
+            />
+
+            <Route
+              path="challan"
+              element={
+                <ChallanListPage
+                  onOpenCreate={() => navigate("/pages/mainModule/challan/new")}
+                />
+              }
+            />
+            <Route
+              path="challan/new"
+              element={
+                <CreateChallanPage
+                  onBack={() => navigate("/pages/mainModule/challan")}
+                  onSuccess={() => navigate("/pages/mainModule/challan")}
                 />
               }
             />

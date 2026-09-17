@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Send, ArrowLeft, PackageCheck, AlertCircle, Clock, CheckCircle2, Truck, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { ArrowLeft, Send, AlertCircle, Clock, CheckCircle2, Truck, Calendar, Package, Factory, Info } from 'lucide-react';
 import { useDeliveryForm } from '../hooks/useDeliveryForm';
-import { fetchSalesOrders } from '../../client/services/salesOrderService';
+import { fetchSalesOrders, getProducts } from '../../client/services/salesOrderService';
 import { fetchAllBOMPreparations } from '../../bomPreparation/services/bomPreparationService';
 import { createDeliveryChallan, fetchOrderDispatchSummary, getAllDeliveryChallans } from '../services/deliveryService';
 
 export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
   const dateInputRef = useRef(null);
   const [salesOrders, setSalesOrders] = useState([]);
+  const [deliveryMode, setDeliveryMode] = useState('site_material'); // 'site_material' | 'in_house'
   const [selectedOrderId, setSelectedOrderId] = useState('');
   const [selectedOrderSummary, setSelectedOrderSummary] = useState(null);
   const [preparationId, setPreparationId] = useState(null);
@@ -24,42 +25,50 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
     setError,
     setLoading,
     handleHeaderChange,
-    addItemRow,
-    removeItemRow,
     updateItemRow,
     resetForm,
   } = useDeliveryForm();
 
-  // Transporter Name Change with instant validation / character filter
+  // Transporter Name Change with validation
   const handleTransporterChange = (e) => {
     const rawVal = e.target.value;
-    // Allow only alphanumeric characters, spaces, &, ., - (strictly NO slashes / or //)
     const cleanVal = rawVal.replace(/[^a-zA-Z0-9\s&.-]/g, '');
     handleHeaderChange({ target: { name: 'transporter_name', value: cleanVal } });
   };
 
-  // Vehicle Number Change with auto uppercase & character filter
+  // Vehicle Number Change with auto uppercase
   const handleVehicleChange = (e) => {
     const rawVal = e.target.value;
-    // Auto capitalize and allow only uppercase letters, numbers, spaces, and hyphens
     const cleanVal = rawVal.toUpperCase().replace(/[^A-Z0-9\s-]/g, '');
     handleHeaderChange({ target: { name: 'vehicle_no', value: cleanVal } });
   };
 
-  // Fetch sales orders and filter to ONLY those with remaining balance to deliver
+  // Fetch all Sales Orders, BOM Preparations, and Products on mount
   useEffect(() => {
     const loadSalesOrders = async () => {
       try {
         setLoadingOrders(true);
-        const [res, prepRes, challanRes] = await Promise.all([
+        const [res, prepRes, challanRes, prodRes] = await Promise.all([
           fetchSalesOrders(),
           fetchAllBOMPreparations().catch(() => ({ data: [] })),
           getAllDeliveryChallans().catch(() => ({ data: [] })),
+          getProducts().catch(() => ({ data: [] })),
         ]);
+
+
+        console.log(res.data, "salesOrderService")
+
 
         const ordersList = res?.data ?? (Array.isArray(res) ? res : []);
         const prepsList = prepRes?.data ?? (Array.isArray(prepRes) ? prepRes : []);
         const challanList = challanRes?.data ?? (Array.isArray(challanRes) ? challanRes : []);
+        const masterProducts = prodRes?.data ?? (Array.isArray(prodRes) ? prodRes : []);
+
+        const prodModeMap = new Map();
+        masterProducts.forEach((p) => {
+          if (p.id) prodModeMap.set(String(p.id), p.fulfilment_mode);
+          if (p.product_name) prodModeMap.set(p.product_name.trim().toLowerCase(), p.fulfilment_mode);
+        });
 
         const prepMap = new Map();
         prepsList.forEach((p) => {
@@ -75,49 +84,108 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
           if (!ordId) return;
           const totalOrd = Number(ch.total_ordered_qty || ch.order_total_ordered_qty || 0);
           const cumDel = Number(ch.cumulative_delivered_qty ?? ch.total_delivered_qty ?? 0);
-          if (ch.status === 'Fully Delivered' || ch.status === 'Delivered' || (totalOrd > 0 && cumDel >= totalOrd)) {
+          if (ch.status === 'Fully Delivered' || (totalOrd > 0 && cumDel >= totalOrd)) {
             fullyDeliveredOrderIds.add(ordId);
           }
         });
 
-        // Eligible for delivery:
-        // 1) Not already fully delivered (fullyDeliveredOrderIds)
-        // 2) Confirmed orders (In-House manufacturing orders, site assembly orders with prepared BOM, or any confirmed order ready for delivery)
+        // Helper to accurately classify In-House manufactured product orders vs Site Assembly project orders
+        const checkIsInHouseOrder = (ord, hasPreparedBOM) => {
+          if (!ord) return false;
+
+          const oType = String(ord.orderType || ord.order_type || '').trim().toLowerCase();
+          if (oType === 'in_house' || oType === 'inhouse' || oType === 'direct') return true;
+          if (Boolean(ord.is_in_house_manufacturing) || Boolean(ord.isInHouseOrder)) return true;
+
+          const pName = String(ord.projectName || ord.project_name || '').trim().toLowerCase();
+          if (pName.startsWith('in-house') || pName.includes('in-house') || pName.includes('direct delivery')) return true;
+
+          const incharge = String(ord.projectIncharge || ord.project_incharge || '').trim().toLowerCase();
+          if (incharge.includes('in-house') || incharge.includes('inhouse') || incharge.includes('direct')) return true;
+
+          const items = Array.isArray(ord.items) ? ord.items : [];
+          if (items.length > 0) {
+            let hasInHouse = false;
+            let hasSite = false;
+
+            items.forEach((it) => {
+              let mode = it.fulfilment_mode || it.fulfilmentMode;
+              const itName = String(it.productName || it.item_name || it.itemName || '').trim().toLowerCase();
+              const capName = String(it.capacity || it.description || '').trim().toLowerCase();
+              const pid = String(it.productId || it.product_id || '');
+
+              if (!mode && pid && prodModeMap.has(pid)) {
+                mode = prodModeMap.get(pid);
+              }
+              if (!mode && itName && prodModeMap.has(itName)) {
+                mode = prodModeMap.get(itName);
+              }
+              if (!mode && capName && prodModeMap.has(capName)) {
+                mode = prodModeMap.get(capName);
+              }
+
+              // Fallback safety for known product names
+              if (!mode) {
+                if (itName.includes('pump') || itName.includes('light') || itName.includes('keyboard')) {
+                  mode = 'in_house_manufacturing';
+                } else if (
+                  itName.includes('solar system') ||
+                  itName.includes('laptop') ||
+                  itName.includes('pc') ||
+                  itName.includes('water system') ||
+                  itName.includes('123445')
+                ) {
+                  mode = 'site_assembly';
+                }
+              }
+
+              if (mode === 'in_house_manufacturing' || mode === 'in_house') {
+                hasInHouse = true;
+              } else if (mode === 'site_assembly') {
+                hasSite = true;
+              }
+            });
+
+            if (hasInHouse && !hasSite) {
+              return true;
+            }
+            if (hasSite) {
+              return false;
+            }
+          }
+
+          if (hasPreparedBOM) {
+            return false;
+          }
+
+          return false;
+        };
+
         const eligibleOrders = ordersList
           .filter((ord) => {
             const ordId = Number(ord.Id || ord.id);
             if (!ordId) return false;
-            if (fullyDeliveredOrderIds.has(ordId)) {
-              return false; // Skip already 100% delivered sales orders
-            }
-
-            const isConfirmed = String(ord.status ?? ord.Status ?? '').trim().toLowerCase() === 'confirmed';
-            if (!isConfirmed) return false;
-
-            const prep = prepMap.get(ordId);
-            const hasPreparedBOM = prep && Array.isArray(prep.items) && prep.items.length > 0;
-
-            const isInHouse =
-              ord.orderType === 'in_house' ||
-              ord.order_type === 'in_house' ||
-              Boolean(ord.is_in_house_manufacturing) ||
-              (typeof ord.projectName === 'string' && ord.projectName.toLowerCase().startsWith('in-house')) ||
-              (typeof ord.project_name === 'string' && ord.project_name.toLowerCase().startsWith('in-house'));
-
-            // Business Logic:
-            // 1) In-House Manufacturing Orders: Direct Delivery once Confirmed (BOM preparation skipped)
-            // 2) Site Assembly / Delivery Orders: MANDATORY to prepare BOM first (must have prepared BOM items)
-            if (isInHouse) {
-              return true;
-            }
-            return Boolean(hasPreparedBOM);
+            // Exclude orders that are already 100% delivered
+            if (fullyDeliveredOrderIds.has(ordId)) return false;
+            return true;
           })
           .map((ord) => {
             const ordId = Number(ord.Id || ord.id);
             const prep = prepMap.get(ordId);
+            const mode = String(ord.fulfilment_mode || '').trim().toLowerCase();
+            const oType = String(ord.orderType || ord.order_type || '').trim().toLowerCase();
+            const isInHouse =
+              mode === 'in_house_manufacturing' ||
+              mode === 'in_house' ||
+              oType === 'in_house' ||
+              Boolean(ord.is_in_house_manufacturing) ||
+              checkIsInHouseOrder(ord, prep && prep.items && prep.items.length > 0);
+
             return {
               ...ord,
               preparationId: prep ? prep.id : null,
+              fulfilment_mode: isInHouse ? 'in_house_manufacturing' : 'site_assembly',
+              isInHouseOrder: isInHouse,
             };
           })
           .sort((a, b) => Number(b.Id || b.id || 0) - Number(a.Id || a.id || 0));
@@ -131,6 +199,19 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
     };
     loadSalesOrders();
   }, []);
+
+  // Filtered orders according to active delivery mode (Site Delivery vs In-House Direct Delivery)
+  const filteredOrders = useMemo(() => {
+    return salesOrders.filter((ord) => {
+      const mode = String(ord.fulfilment_mode || '').trim().toLowerCase();
+      const oType = String(ord.orderType || ord.order_type || '').trim().toLowerCase();
+      const isIH = mode === 'in_house_manufacturing' || oType === 'in_house' || ord.isInHouseOrder;
+      if (deliveryMode === 'in_house') {
+        return isIH;
+      }
+      return !isIH;
+    });
+  }, [salesOrders, deliveryMode]);
 
   // Handle Sales Order selection change & load dispatch summary
   const handleOrderSelect = async (e) => {
@@ -159,38 +240,44 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
       handleHeaderChange({ target: { name: 'customer_name', value: cName } });
       handleHeaderChange({ target: { name: 'delivery_address', value: address } });
 
-      const autoChallanNo = `DC-${found.poNo || found.Id || Date.now()}`;
+      const autoChallanNo = `DL-${found.poNo || found.Id || Date.now()}`;
       handleHeaderChange({ target: { name: 'challan_no', value: autoChallanNo } });
       setPreparationId(found.preparationId || null);
     }
 
     try {
       setLoadingSummary(true);
-      const summaryRes = await fetchOrderDispatchSummary(orderId);
+      const summaryRes = await fetchOrderDispatchSummary(orderId, { mode: deliveryMode });
       if (summaryRes?.success && summaryRes.data) {
         const data = summaryRes.data;
         setSelectedOrderSummary(data);
         setPreparationId(data.preparation_id || null);
 
-        const allItems = (data.items || []).map((it, idx) => ({
-          key: it.key || `prep-item-${it.item_id}-${idx}`,
-          item_id: it.item_id,
-          product_id: it.product_id || it.item_id,
-          item_name: it.item_name,
-          brand: it.brand,
-          unit: it.unit,
-          category: it.category || 'General',
-          required_qty: it.required_qty,
-          already_dispatched_qty: it.already_dispatched_qty,
-          balance_qty: it.balance_qty,
-          warehouse_stock: it.warehouse_stock,
-          suggested_dispatch_qty: it.suggested_dispatch_qty,
-        }));
+        const allItems = (data.items || []).map((it, idx) => {
+          const reqQty = Number(it.required_qty) || 0;
+          const prevDispatched = Math.min(reqQty, Math.max(0, Number(it.already_dispatched_qty) || 0));
+          const balance = Math.max(0, reqQty - prevDispatched);
+
+          return {
+            key: it.key || `prep-item-${it.item_id}-${idx}`,
+            item_id: it.item_id,
+            product_id: it.product_id || it.item_id,
+            item_name: it.item_name,
+            brand: it.brand,
+            unit: it.unit,
+            category: it.category || 'General',
+            required_qty: reqQty,
+            already_dispatched_qty: prevDispatched,
+            balance_qty: balance,
+            warehouse_stock: it.warehouse_stock,
+            suggested_dispatch_qty: it.suggested_dispatch_qty ?? Math.min(balance, Number(it.warehouse_stock) || 0),
+          };
+        });
 
         setOrderItemsList(allItems);
 
-        // Auto-populate ALL BOM items as individual rows in the dispatch table
-        const allBOMRows = allItems.map((it, idx) => ({
+        // Auto-populate ALL items as fixed rows in the dispatch table
+        const allRows = allItems.map((it, idx) => ({
           id: Date.now() + idx + Math.random(),
           item_id: it.item_id,
           product_id: it.product_id,
@@ -203,14 +290,84 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
           balance_qty: it.balance_qty,
           warehouse_stock: it.warehouse_stock,
           ordered_qty: it.balance_qty,
-          delivered_qty: it.suggested_dispatch_qty ?? (it.warehouse_stock > 0 ? Math.min(it.balance_qty, it.warehouse_stock) : 0),
+          delivered_qty: it.suggested_dispatch_qty ?? (it.warehouse_stock > 0 ? Math.min(it.balance_qty, it.warehouse_stock) : it.balance_qty),
           selected_order_item_key: it.key,
         }));
 
-        populateItems(allBOMRows);
+        populateItems(allRows);
+      } else if (Array.isArray(found?.items) && found.items.length > 0) {
+        // Fallback for In-House orders with no BOM prep: populate directly from Sales Order line items
+        const directItems = found.items.map((it, idx) => ({
+          key: `direct-item-${idx}`,
+          item_id: it.itemId || it.Id || idx + 1,
+          product_id: it.productId || it.product_id || 0,
+          item_name: it.productName || it.itemName || it.name || 'Finished Good',
+          brand: it.brandName || '',
+          unit: 'Nos',
+          category: 'Finished Goods',
+          required_qty: Number(it.qty) || 1,
+          already_dispatched_qty: 0,
+          balance_qty: Number(it.qty) || 1,
+          warehouse_stock: 9999,
+          suggested_dispatch_qty: Number(it.qty) || 1,
+        }));
+        setOrderItemsList(directItems);
+
+        const allRows = directItems.map((it, idx) => ({
+          id: Date.now() + idx + Math.random(),
+          item_id: it.item_id,
+          product_id: it.product_id,
+          item_name: it.item_name,
+          brand: it.brand || '',
+          unit: it.unit || 'Nos',
+          category: it.category,
+          required_qty: it.required_qty,
+          already_dispatched_qty: it.already_dispatched_qty,
+          balance_qty: it.balance_qty,
+          warehouse_stock: it.warehouse_stock,
+          ordered_qty: it.balance_qty,
+          delivered_qty: it.balance_qty,
+          selected_order_item_key: it.key,
+        }));
+        populateItems(allRows);
       }
     } catch (sumErr) {
       console.warn('Could not fetch order dispatch summary:', sumErr);
+      if (Array.isArray(found?.items) && found.items.length > 0) {
+        const directItems = found.items.map((it, idx) => ({
+          key: `direct-item-${idx}`,
+          item_id: it.itemId || it.Id || idx + 1,
+          product_id: it.productId || it.product_id || 0,
+          item_name: it.productName || it.itemName || it.name || 'Finished Good',
+          brand: it.brandName || '',
+          unit: 'Nos',
+          category: 'Finished Goods',
+          required_qty: Number(it.qty) || 1,
+          already_dispatched_qty: 0,
+          balance_qty: Number(it.qty) || 1,
+          warehouse_stock: 9999,
+          suggested_dispatch_qty: Number(it.qty) || 1,
+        }));
+        setOrderItemsList(directItems);
+
+        const allRows = directItems.map((it, idx) => ({
+          id: Date.now() + idx + Math.random(),
+          item_id: it.item_id,
+          product_id: it.product_id,
+          item_name: it.item_name,
+          brand: it.brand || '',
+          unit: it.unit || 'Nos',
+          category: it.category,
+          required_qty: it.required_qty,
+          already_dispatched_qty: it.already_dispatched_qty,
+          balance_qty: it.balance_qty,
+          warehouse_stock: it.warehouse_stock,
+          ordered_qty: it.balance_qty,
+          delivered_qty: it.balance_qty,
+          selected_order_item_key: it.key,
+        }));
+        populateItems(allRows);
+      }
     } finally {
       setLoadingSummary(false);
     }
@@ -248,52 +405,40 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
       }
       const rawAlphanumeric = vehNo.replace(/[\s-]/g, '');
       if (rawAlphanumeric.length < 4) {
-        return setError('Please enter a valid Vehicle Number (at least 4 characters, e.g. DL 01 AB 1234).');
+        return setError('Vehicle Number must contain at least 4 alphanumeric characters.');
       }
     }
 
-    // Filter items to dispatch (only items with delivered_qty > 0)
-    const itemsToDispatch = items.filter((row) => Number(row.delivered_qty) > 0);
-
-    if (itemsToDispatch.length === 0) {
-      return setError('Please enter a Dispatch Quantity greater than 0 for at least one item.');
+    const validItems = items.filter((it) => Number(it.delivered_qty) > 0);
+    if (validItems.length === 0) {
+      return setError('Please specify a dispatch quantity greater than 0 for at least one item.');
     }
 
-    for (let i = 0; i < items.length; i++) {
-      const row = items[i];
-      const delivered = Number(row.delivered_qty) || 0;
-      const balance = Number(row.balance_qty ?? row.ordered_qty) || 0;
-      const stock = Number(row.warehouse_stock ?? Infinity);
+    // Check if any dispatched quantity exceeds available balance or stock
+    for (const it of validItems) {
+      const balance = Number(it.balance_qty ?? it.ordered_qty ?? 0);
+      const stock = Number(it.warehouse_stock ?? 0);
+      const del = Number(it.delivered_qty);
 
-      if (delivered > 0) {
-        if (!row.item_name?.trim()) {
-          return setError(`Please select a valid item at row #${i + 1}`);
-        }
-        if (balance > 0 && delivered > balance) {
-          return setError(`Cannot dispatch ${delivered} units for "${row.item_name}". Remaining balance is only ${balance}.`);
-        }
-        if (delivered > stock) {
-          return setError(`Warehouse stock insufficient for "${row.item_name}". Available stock: ${stock}, Requested: ${delivered}.`);
-        }
+      if (del > balance) {
+        return setError(`Dispatched quantity for "${it.item_name}" (${del}) cannot exceed remaining balance (${balance}).`);
+      }
+      if (del > stock) {
+        return setError(`Dispatched quantity for "${it.item_name}" (${del}) exceeds available warehouse stock (${stock}).`);
       }
     }
 
     const payload = {
-      order_id: Number(selectedOrderId) || selectedOrderId,
-      preparation_id: preparationId || null,
+      order_id: Number(selectedOrderId),
+      preparation_id: preparationId,
+      challan_no: formData.challan_no,
       dispatch_date: formData.dispatch_date,
-      transporter_name: formData.transporter_name ? formData.transporter_name.trim() : '',
-      vehicle_no: formData.vehicle_no ? formData.vehicle_no.trim() : '',
-      delivery_items: itemsToDispatch.map((item) => ({
-        item_id: Number(item.item_id || item.product_id || item.id) || null,
-        product_id: Number(item.product_id || item.item_id || item.id) || null,
-        item_name: item.item_name || '',
-        product_name: item.item_name || '',
-        brand: item.brand || '',
-        unit: item.unit || 'Nos',
-        category: item.category || 'General',
-        ordered_qty: Number(item.required_qty || item.ordered_qty) || 0,
-        delivered_qty: Number(item.delivered_qty) || 0,
+      transporter_name: formData.transporter_name?.trim() || null,
+      vehicle_no: formData.vehicle_no?.trim() || null,
+      delivery_items: validItems.map((it) => ({
+        item_id: it.item_id,
+        ordered_qty: Number(it.ordered_qty) || Number(it.required_qty),
+        delivered_qty: Number(it.delivered_qty),
       })),
     };
 
@@ -311,7 +456,7 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
       }
     } catch (err) {
       setLoading(false);
-      setError(err.response?.data?.message || 'Failed to create delivery challan.');
+      setError(err.response?.data?.message || 'Failed to create delivery.');
     }
   };
 
@@ -324,14 +469,19 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
             <button
               onClick={onBack}
               type="button"
-              className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition"
+              className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition cursor-pointer"
             >
               <ArrowLeft size={20} />
             </button>
           )}
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Create Delivery Challan & Dispatch</h1>
-            <p className="text-xs text-gray-500">Supports Partial & Full Dispatches with automated warehouse inventory reduction</p>
+            <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <Truck size={22} className="text-blue-600" />
+              Create Delivery & Dispatch
+            </h1>
+            <p className="text-xs text-gray-500">
+              Deliver Site Materials (BOM items) for projects, or Direct Finished Goods for manufactured product orders
+            </p>
           </div>
         </div>
       </div>
@@ -343,35 +493,110 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
         </div>
       )}
 
+      {/* 2 DELIVERY MODES SWITCHER */}
+      <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-xs mb-6">
+        <div className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+          Select Delivery Type:
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Mode 1: Site Material Delivery */}
+          <button
+            type="button"
+            onClick={() => {
+              setDeliveryMode('site_material');
+              setSelectedOrderId('');
+              setSelectedOrderSummary(null);
+              populateItems([]);
+            }}
+            className={`p-3.5 rounded-lg border-2 text-left transition flex items-start gap-3 cursor-pointer ${deliveryMode === 'site_material'
+              ? 'border-blue-600 bg-blue-50/50 shadow-xs'
+              : 'border-gray-200 hover:border-gray-300 bg-white'
+              }`}
+          >
+            <div className={`p-2 rounded-lg ${deliveryMode === 'site_material' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
+              <Package size={18} />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-xs flex items-center gap-1.5">
+                <span>Site Delivery (Material / BOM Items)</span>
+                {deliveryMode === 'site_material' && (
+                  <span className="text-[10px] px-1.5 py-0.2 bg-blue-600 text-white rounded font-bold">Active</span>
+                )}
+              </div>
+              <div className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
+                Dispatches raw materials, components & BOM items for Site Assembly solar projects.
+              </div>
+            </div>
+          </button>
+
+          {/* Mode 2: Direct Product Delivery */}
+          <button
+            type="button"
+            onClick={() => {
+              setDeliveryMode('in_house');
+              setSelectedOrderId('');
+              setSelectedOrderSummary(null);
+              populateItems([]);
+            }}
+            className={`p-3.5 rounded-lg border-2 text-left transition flex items-start gap-3 cursor-pointer ${deliveryMode === 'in_house'
+              ? 'border-indigo-600 bg-indigo-50/50 shadow-xs'
+              : 'border-gray-200 hover:border-gray-300 bg-white'
+              }`}
+          >
+            <div className={`p-2 rounded-lg ${deliveryMode === 'in_house' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
+              <Factory size={18} />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-xs flex items-center gap-1.5">
+                <span>Direct Product Delivery (Finished Goods)</span>
+                {deliveryMode === 'in_house' && (
+                  <span className="text-[10px] px-1.5 py-0.2 bg-indigo-600 text-white rounded font-bold">Active</span>
+                )}
+              </div>
+              <div className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
+                Dispatches manufactured Finished Goods directly to clients for In-House product orders.
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Section 1: Sales Order & Logistics Info */}
         <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Challan Header Info</h2>
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+            <Truck size={16} className="text-blue-600" />
+            Delivery Header & Logistics Info
+          </h2>
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
             {/* Sales Order / PO Search & Select Dropdown */}
             <div className="md:col-span-2">
-              <label className="block font-medium text-gray-700 mb-1">Select Sales Order / PO Number *</label>
+              <label className="block font-bold text-gray-700 mb-1">
+                Select {deliveryMode === 'in_house' ? 'In-House (Finished Goods) Order' : 'Site Assembly Project Order'} *
+              </label>
               <select
                 value={selectedOrderId}
                 onChange={handleOrderSelect}
-                className="w-full border border-gray-300 rounded-md p-2 bg-white focus:ring-1 focus:ring-blue-500 text-black font-medium"
+                required
+                className="w-full border border-gray-300 rounded-md p-2.5 bg-white focus:ring-1 focus:ring-blue-500 text-black font-medium"
               >
                 <option value="">
-                  {loadingOrders ? 'Loading Sales Orders...' : '-- Select Sales Order / PO --'}
+                  {loadingOrders
+                    ? 'Loading Orders...'
+                    : filteredOrders.length === 0
+                      ? `-- No ${filteredOrders === 'in_house_manufacturing' ? '"in_house_manufacturing"' : 'Site Assembly'} Orders Ready for Delivery --`
+                      : `-- Select ${filteredOrders === 'in_house_manufacturing' ? '"in_house_manufacturing"' : 'Site Project Order'} --`}
                 </option>
-                {salesOrders.map((ord) => {
+                {console.log("filteredOrders", filteredOrders)}
+
+                {filteredOrders.map((ord) => {
                   const oId = ord.Id || ord.id;
                   const poLabel = ord.poNo ? `(PO: ${ord.poNo})` : '';
                   const clientLabel = ord.clientName || ord.companyName || 'Customer';
-                  const isInHouse =
-                    ord.orderType === 'in_house' ||
-                    ord.order_type === 'in_house' ||
-                    Boolean(ord.is_in_house_manufacturing) ||
-                    (typeof ord.projectName === 'string' && ord.projectName.toLowerCase().startsWith('in-house'));
-                  const typeBadge = isInHouse ? ' • [In-House]' : '';
                   return (
                     <option key={oId} value={oId}>
-                      SO-{oId} {poLabel} - {clientLabel}{typeBadge}
+                      SO-{oId} {poLabel} - {clientLabel}
                     </option>
                   );
                 })}
@@ -380,7 +605,7 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
 
             {/* Dispatch Date */}
             <div>
-              <label className="block font-medium text-gray-700 mb-1">Dispatch Date *</label>
+              <label className="block font-bold text-gray-700 mb-1">Dispatch Date *</label>
               <div
                 onClick={() => dateInputRef.current?.showPicker?.()}
                 className="relative cursor-pointer"
@@ -389,11 +614,12 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
                   ref={dateInputRef}
                   type="date"
                   name="dispatch_date"
+                  required
                   value={formData.dispatch_date}
                   onChange={handleHeaderChange}
                   onClick={(e) => e.currentTarget?.showPicker?.()}
                   onFocus={(e) => e.currentTarget?.showPicker?.()}
-                  className="w-full border border-gray-300 rounded-md p-2 bg-white focus:ring-1 focus:ring-blue-500 text-black cursor-pointer font-medium"
+                  className="w-full border border-gray-300 rounded-md p-2.5 bg-white focus:ring-1 focus:ring-blue-500 text-black cursor-pointer font-medium"
                 />
               </div>
             </div>
@@ -404,10 +630,10 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
               <input
                 type="text"
                 name="transporter_name"
-                placeholder="e.g. Blue Dart, VRL Logistics"
+                placeholder="e.g. Blue Dart, Self Delivery"
                 value={formData.transporter_name}
                 onChange={handleTransporterChange}
-                className="w-full border border-gray-300 rounded-md p-2 bg-white focus:ring-1 focus:ring-blue-500 text-black"
+                className="w-full border border-gray-300 rounded-md p-2.5 bg-white focus:ring-1 focus:ring-blue-500 text-black"
               />
             </div>
 
@@ -420,7 +646,7 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
                 placeholder="e.g. DL 01 AB 1234 / UP32AB1234"
                 value={formData.vehicle_no}
                 onChange={handleVehicleChange}
-                className="w-full border border-gray-300 rounded-md p-2 bg-white focus:ring-1 focus:ring-blue-500 text-black font-mono uppercase"
+                className="w-full border border-gray-300 rounded-md p-2.5 bg-white focus:ring-1 focus:ring-blue-500 text-black font-mono uppercase"
               />
             </div>
 
@@ -433,7 +659,7 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
                 readOnly
                 placeholder="Auto-populated from Sales Order"
                 value={formData.delivery_address}
-                className="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-gray-600 cursor-not-allowed"
+                className="w-full bg-gray-50 border border-gray-300 rounded-md p-2.5 text-gray-600 cursor-not-allowed"
               />
             </div>
           </div>
@@ -445,18 +671,18 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
             <div className="flex flex-wrap items-center justify-between gap-4 mb-3 border-b border-blue-200/60 pb-3">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-blue-900">
-                  Partial Dispatch & Fulfillment Status for PO #{selectedOrderSummary.po_number}
+                  {deliveryMode === 'in_house' ? 'Finished Goods Fulfillment' : 'Site Material BOM Dispatch'} for PO #{selectedOrderSummary.po_number}
                 </span>
-                <p className="text-[11px] text-gray-600">
-                  Customer: <span className="font-semibold text-gray-800">{selectedOrderSummary.customer_name}</span> | Previous Shipments: <span className="font-semibold text-gray-800">{selectedOrderSummary.previous_challans_count}</span>
+                <p className="text-[11px] text-gray-600 mt-0.5">
+                  Customer: <strong className="text-gray-800">{selectedOrderSummary.customer_name}</strong> | Previous Deliveries: <strong className="text-gray-800">{selectedOrderSummary.previous_challans_count}</strong>
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${selectedOrderSummary.is_fully_fulfilled
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : selectedOrderSummary.total_dispatched_qty > 0
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-blue-100 text-blue-800'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : selectedOrderSummary.total_dispatched_qty > 0
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-blue-100 text-blue-800'
                   }`}>
                   {selectedOrderSummary.is_fully_fulfilled ? <CheckCircle2 size={13} /> : <Clock size={13} />}
                   {selectedOrderSummary.status}
@@ -466,9 +692,11 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
               <div className="bg-white p-2.5 rounded-md border border-gray-200">
-                <div className="text-gray-500 text-[11px]">Total BOM Required</div>
+                <div className="text-gray-500 text-[11px]">
+                  {deliveryMode === 'in_house' ? 'Total Ordered Products' : 'Total BOM Required'}
+                </div>
                 <div className="text-base font-bold text-gray-800">
-                  {selectedOrderSummary.total_required_qty} <span className="text-xs font-normal text-gray-500">Qty ({selectedOrderSummary.items?.length || 0} Items)</span>
+                  {selectedOrderSummary.total_required_qty} <span className="text-xs font-normal text-gray-500">Qty ({selectedOrderSummary.items?.length || 0} items)</span>
                 </div>
               </div>
               <div className="bg-white p-2.5 rounded-md border border-gray-200">
@@ -484,201 +712,180 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
                 </div>
               </div>
               <div className="bg-white p-2.5 rounded-md border border-gray-200">
-                <div className="text-gray-500 text-[11px]">Challan Shipment #</div>
+                <div className="text-gray-500 text-[11px]">Delivery Shipment #</div>
                 <div className="text-base font-bold text-emerald-600">Shipment #{selectedOrderSummary.previous_challans_count + 1}</div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Section 3: Line Items Table */}
+        {/* Section 3: Line Items Table (Clean, Read-only descriptions, non-box text) */}
         <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm space-y-4">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Items to Dispatch in this Shipment</h2>
-              <p className="text-[11px] text-gray-500">Specify quantity to dispatch. Warehouse stock will be deducted accordingly.</p>
+              <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                {deliveryMode === 'in_house' ? <Factory size={16} className="text-indigo-600" /> : <Package size={16} className="text-blue-600" />}
+                {deliveryMode === 'in_house' ? 'Finished Goods to Dispatch' : 'Site Material / BOM Items to Dispatch'}
+              </h2>
+              <p className="text-[11px] text-gray-500">
+                Item details are auto-loaded. Enter the dispatch quantity for each item below.
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={addItemRow}
-              className="flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold px-3 py-1.5 rounded-md transition"
-            >
-              <Plus size={14} /> Add Item Row
-            </button>
+            {items.length > 0 && (
+              <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full border border-gray-200">
+                {items.length} Items Listed
+              </span>
+            )}
           </div>
 
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse min-w-[850px]">
-              <thead className="bg-gray-100 text-gray-600 font-bold uppercase text-[10px] border-b border-gray-200">
-                <tr>
-                  <th className="py-2.5 px-3 w-8 text-center">#</th>
-                  <th className="py-2.5 px-3 min-w-[220px]">Item Name</th>
-                  <th className="py-2.5 px-3 w-24 text-right">Required Qty</th>
-                  <th className="py-2.5 px-3 w-24 text-right">Already Sent</th>
-                  <th className="py-2.5 px-3 w-24 text-right">Balance Qty</th>
-                  <th className="py-2.5 px-3 w-28 text-right">Warehouse Stock</th>
-                  <th className="py-2.5 px-3 w-32 text-right">Dispatch Qty (Now)</th>
-                  <th className="py-2.5 px-3 w-24 text-right">New Balance</th>
-                  <th className="py-2.5 px-3 w-12 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 text-xs">
-                {items.map((item, idx) => {
-                  const required = Number(item.required_qty ?? item.ordered_qty) || 0;
-                  const alreadySent = Number(item.already_dispatched_qty) || 0;
-                  const balance = Number(item.balance_qty ?? Math.max(0, required - alreadySent));
-                  const delivered = Number(item.delivered_qty) || 0;
-                  const newBalance = Math.max(0, balance - delivered);
-                  const stock = Number(item.warehouse_stock ?? 0);
-                  const isStockInsufficient = delivered > stock;
+          {!selectedOrderId ? (
+            <div className="p-8 text-center bg-gray-50 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500">
+              Please select a Sales Order above to view the items for dispatch.
+            </div>
+          ) : items.length === 0 ? (
+            <div className="p-8 text-center bg-gray-50 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500">
+              {loadingSummary ? 'Loading order items...' : 'No items found for this order.'}
+            </div>
+          ) : (
+            <div className="overflow-x-auto w-full border border-gray-200 rounded-lg">
+              <table className="w-full text-left border-collapse text-xs min-w-[850px]">
+                <thead className="bg-gray-100 text-gray-700 font-bold uppercase text-[10px] border-b border-gray-200">
+                  <tr>
+                    <th className="py-3 px-3 w-10 text-center">#</th>
+                    <th className="py-3 px-3 min-w-[240px]">
+                      {deliveryMode === 'in_house' ? 'Finished Good Description' : 'Item Description'}
+                    </th>
+                    <th className="py-3 px-3 w-20 text-center">Unit</th>
+                    <th className="py-3 px-3 w-24 text-right">Required Qty</th>
+                    <th className="py-3 px-3 w-24 text-right">Already Sent</th>
+                    <th className="py-3 px-3 w-24 text-right">Balance Qty</th>
+                    <th className="py-3 px-3 w-28 text-right">Warehouse Stock</th>
+                    <th className="py-3 px-3 w-36 text-right bg-blue-50/70 text-blue-900">Dispatch Qty (Now)</th>
+                    <th className="py-3 px-3 w-24 text-right">New Balance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {items.map((item, idx) => {
+                    const required = Number(item.required_qty ?? item.ordered_qty) || 0;
+                    const alreadySent = Number(item.already_dispatched_qty) || 0;
+                    const balance = Number(item.balance_qty ?? Math.max(0, required - alreadySent));
+                    const delivered = Number(item.delivered_qty) || 0;
+                    const newBalance = Math.max(0, balance - delivered);
+                    const stock = Number(item.warehouse_stock ?? 0);
+                    const isStockInsufficient = delivered > stock;
 
-                  return (
-                    <tr key={item.id} className="hover:bg-gray-50/60">
-                      <td className="py-2.5 px-3 text-center text-gray-400 font-bold">{idx + 1}</td>
+                    return (
+                      <tr key={item.id} className="hover:bg-gray-50/60">
+                        <td className="py-3 px-3 text-center text-gray-400 font-bold">{idx + 1}</td>
 
-                      {/* Item Selection Dropdown */}
-                      <td className="py-2.5 px-3">
-                        <select
-                          className="w-full bg-white border border-gray-300 rounded p-1.5 text-gray-800 text-xs focus:ring-1 focus:ring-blue-500 font-medium"
-                          value={item.selected_order_item_key || ''}
-                          onChange={(e) => {
-                            const selectedKey = e.target.value;
-                            if (!selectedKey) {
-                              updateItemRow(item.id, 'item_name', '');
-                              updateItemRow(item.id, 'item_id', null);
-                              updateItemRow(item.id, 'product_id', null);
-                              updateItemRow(item.id, 'required_qty', '');
-                              updateItemRow(item.id, 'already_dispatched_qty', '');
-                              updateItemRow(item.id, 'balance_qty', '');
-                              updateItemRow(item.id, 'ordered_qty', '');
-                              updateItemRow(item.id, 'delivered_qty', '');
-                              updateItemRow(item.id, 'warehouse_stock', '');
-                              updateItemRow(item.id, 'selected_order_item_key', '');
-                              return;
-                            }
+                        {/* Item Details (Normal Text, Non-editable) */}
+                        <td className="py-3 px-3">
+                          <div className="font-semibold text-gray-900 text-xs">{item.item_name}</div>
+                          <div className="text-[10px] text-gray-400 flex items-center gap-2 mt-0.5">
+                            <span>Category: {item.category || 'General'}</span>
+                            {item.brand && <span>• Brand: {item.brand}</span>}
+                          </div>
+                        </td>
 
-                            const foundItem = orderItemsList.find(
-                              (ordItem, idxKey) => (ordItem.key || `${ordItem.item_id || idxKey}`) === selectedKey
-                            );
+                        {/* Unit (Normal Text) */}
+                        <td className="py-3 px-3 text-center font-mono text-gray-600">
+                          {item.unit || 'Nos'}
+                        </td>
 
-                            if (foundItem) {
-                              const name = foundItem.item_name || 'Unnamed Item';
-                              const reqQ = foundItem.required_qty || 0;
-                              const prevDel = foundItem.already_dispatched_qty || 0;
-                              const balQ = foundItem.balance_qty || 0;
-                              const stockQ = foundItem.warehouse_stock || 0;
-                              const itemId = foundItem.item_id || null;
-                              const suggestedDel = Math.min(balQ, stockQ);
+                        {/* Required Qty (Normal Text) */}
+                        <td className="py-3 px-3 text-right font-mono text-gray-700 font-medium">
+                          {required}
+                        </td>
 
-                              updateItemRow(item.id, 'item_name', name);
-                              updateItemRow(item.id, 'item_id', itemId);
-                              updateItemRow(item.id, 'product_id', itemId);
-                              updateItemRow(item.id, 'required_qty', reqQ);
-                              updateItemRow(item.id, 'already_dispatched_qty', prevDel);
-                              updateItemRow(item.id, 'balance_qty', balQ);
-                              updateItemRow(item.id, 'ordered_qty', balQ);
-                              updateItemRow(item.id, 'delivered_qty', suggestedDel);
-                              updateItemRow(item.id, 'warehouse_stock', stockQ);
-                              updateItemRow(item.id, 'selected_order_item_key', selectedKey);
-                            }
-                          }}
-                        >
-                          <option value="">
-                            {!selectedOrderId
-                              ? '-- Select Sales Order First --'
-                              : orderItemsList.length === 0
-                                ? '-- No Prepared BOM Items Found --'
-                                : '-- Select Item to Dispatch --'}
-                          </option>
+                        {/* Already Sent Qty (Normal Text) */}
+                        <td className="py-3 px-3 text-right font-mono text-indigo-600 font-medium">
+                          {alreadySent}
+                        </td>
 
-                          {orderItemsList.map((ordItem, idxKey) => {
-                            const itemKey = ordItem.key || `${ordItem.item_id || idxKey}`;
-                            const name = ordItem.item_name || 'Unnamed Item';
-                            const brand = ordItem.brand ? ` [${ordItem.brand}]` : '';
-                            const unit = ordItem.unit ? ` ${ordItem.unit}` : '';
-                            const balLabel = ordItem.balance_qty === 0 ? ' (Fully Dispatched)' : ` (Bal: ${ordItem.balance_qty}${unit} | Stock: ${ordItem.warehouse_stock})`;
-                            return (
-                              <option key={itemKey} value={itemKey}>
-                                {name}{brand}{balLabel}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </td>
+                        {/* Remaining Balance Qty (Normal Text) */}
+                        <td className="py-3 px-3 text-right font-mono font-bold text-amber-600">
+                          {balance}
+                        </td>
 
-                      {/* Required Qty (Total BOM Required) */}
-                      <td className="py-2.5 px-3 text-right font-mono text-gray-700 font-medium">
-                        {required}
-                      </td>
+                        {/* Warehouse Stock Available */}
+                        <td className="py-3 px-3 text-right font-mono font-medium">
+                          <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${stock <= 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800'
+                            }`}>
+                            {stock}
+                          </span>
+                        </td>
 
-                      {/* Already Sent Qty */}
-                      <td className="py-2.5 px-3 text-right font-mono text-indigo-600 font-medium">
-                        {alreadySent}
-                      </td>
-
-                      {/* Remaining Balance Qty */}
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-600">
-                        {balance}
-                      </td>
-
-                      {/* Warehouse Stock Available */}
-                      <td className="py-2.5 px-3 text-right font-mono font-medium">
-                        <span className={`px-1.5 py-0.5 rounded text-[11px] ${stock <= 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800'
-                          }`}>
-                          {stock} in stock
-                        </span>
-                      </td>
-
-                      {/* Current Dispatch Qty Input */}
-                      <td className="py-2.5 px-3">
-                        <input
-                          type="number"
-                          min="0"
-                          max={balance || 0}
-                          placeholder="0"
-                          disabled={balance === 0}
-                          value={item.delivered_qty}
-                          onChange={(e) => updateItemRow(item.id, 'delivered_qty', e.target.value)}
-                          className={`w-full bg-white border rounded p-1.5 text-right font-mono font-bold text-blue-600 focus:ring-1 ${
-                            isStockInsufficient || Number(item.delivered_qty) > balance
+                        {/* Current Dispatch Qty Input */}
+                        <td className="py-3 px-3 bg-blue-50/20">
+                          <input
+                            type="number"
+                            min="0"
+                            max={balance || 0}
+                            placeholder="0"
+                            disabled={balance === 0}
+                            value={item.delivered_qty}
+                            onChange={(e) => updateItemRow(item.id, 'delivered_qty', e.target.value)}
+                            className={`w-full bg-white border rounded p-1.5 text-right font-mono font-bold text-blue-700 text-xs focus:ring-1 ${isStockInsufficient || Number(item.delivered_qty) > balance
                               ? 'border-rose-500 bg-rose-50 text-rose-700'
                               : 'border-gray-300 focus:ring-blue-500'
-                          }`}
-                        />
-                        {Number(item.delivered_qty) > balance && (
-                          <div className="text-[10px] text-rose-600 font-medium mt-0.5 text-right">
-                            Exceeds Balance ({balance})
-                          </div>
-                        )}
-                        {isStockInsufficient && Number(item.delivered_qty) <= balance && (
-                          <div className="text-[10px] text-rose-600 font-medium mt-0.5 text-right">
-                            Exceeds Stock ({stock})
-                          </div>
-                        )}
-                      </td>
+                              }`}
+                          />
+                          {Number(item.delivered_qty) > balance && (
+                            <div className="text-[10px] text-rose-600 font-medium mt-0.5 text-right">
+                              Exceeds Balance ({balance})
+                            </div>
+                          )}
+                          {isStockInsufficient && Number(item.delivered_qty) <= balance && (
+                            <div className="text-[10px] text-rose-600 font-medium mt-0.5 text-right">
+                              Exceeds Stock ({stock})
+                            </div>
+                          )}
+                        </td>
 
-                      {/* Calculated New Balance After This Dispatch */}
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-600">
-                        {newBalance}
-                      </td>
-
-                      {/* Action */}
-                      <td className="py-2.5 px-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => removeItemRow(item.id)}
-                          disabled={items.length === 1}
-                          className="p-1 text-gray-400 hover:text-rose-600 disabled:opacity-30 transition"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        {/* Calculated New Balance After This Dispatch */}
+                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-600">
+                          {newBalance}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="bg-gray-100 font-bold text-xs border-t-2 border-gray-300">
+                  <tr>
+                    <td colSpan={3} className="py-2.5 px-3 text-right text-gray-800 uppercase text-[10px]">
+                      Totals
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-gray-900">
+                      {items.reduce((acc, curr) => acc + Number(curr.required_qty ?? curr.ordered_qty ?? 0), 0)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-indigo-700">
+                      {items.reduce((acc, curr) => acc + Number(curr.already_dispatched_qty ?? 0), 0)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-amber-700">
+                      {items.reduce((acc, curr) => acc + Number(curr.balance_qty ?? 0), 0)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-gray-500 text-[10px]">
+                      -
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-blue-700 text-sm bg-blue-50/50">
+                      {items.reduce((acc, curr) => acc + Number(curr.delivered_qty || 0), 0)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-emerald-700">
+                      {items.reduce(
+                        (acc, curr) =>
+                          acc +
+                          Math.max(
+                            0,
+                            Number(curr.balance_qty || 0) - Number(curr.delivered_qty || 0)
+                          ),
+                        0
+                      )}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Section 4: Submit Button */}
@@ -686,14 +893,14 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
           <button
             type="button"
             onClick={handleReset}
-            className="px-4 py-2 border border-gray-300 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 transition"
+            className="px-4 py-2 border border-gray-300 rounded-md text-xs font-semibold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
           >
             Reset
           </button>
           <button
             type="submit"
-            disabled={loading}
-            className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-semibold shadow-sm disabled:opacity-50 transition"
+            disabled={loading || items.length === 0}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-semibold shadow-sm disabled:opacity-50 transition cursor-pointer"
           >
             <Send size={14} />
             {loading ? 'Submitting...' : 'Save & Dispatch Delivery'}
@@ -703,5 +910,3 @@ export const CreateDeliveryPage = ({ onBack, onSuccess }) => {
     </div>
   );
 };
-
-

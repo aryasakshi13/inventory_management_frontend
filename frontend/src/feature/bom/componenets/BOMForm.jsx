@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const emptyForm = {
     productId: "",
@@ -8,8 +8,8 @@ const emptyForm = {
 
 const BOMForm = ({
     bom,
-    products,
-    items,
+    products = [],
+    items = [],
     loading,
     onCreate,
     onUpdate,
@@ -18,6 +18,28 @@ const BOMForm = ({
 
     const [formData, setFormData] =
         useState(emptyForm);
+
+    // Filter items to strictly include only Raw Materials (excluding finished goods / products)
+    const rawMaterialItems = useMemo(() => {
+        const productNamesSet = new Set(
+            (products || [])
+                .map((p) => String(p.product_name || p.name || "").trim().toLowerCase())
+                .filter(Boolean)
+        );
+
+        return (items || []).filter((item) => {
+            const itemName = String(item.item_name || item.name || "").trim().toLowerCase();
+            const category = String(item.category || "").trim().toLowerCase();
+            const itemType = String(item.item_type || "").trim().toLowerCase();
+
+            if (itemType === "finished_good" || itemType === "finished_goods") return false;
+            if (category === "finished goods" || category === "finished good") return false;
+            if (item.product_id) return false;
+            if (productNamesSet.has(itemName)) return false;
+
+            return true;
+        });
+    }, [items, products]);
 
     // =====================================================
     // EDIT DATA
@@ -489,7 +511,7 @@ const BOMForm = ({
                                                         Select Item
                                                     </option>
 
-                                                    {items.map(
+                                                    {rawMaterialItems.map(
                                                         (item) => (
 
                                                             <option
@@ -508,6 +530,16 @@ const BOMForm = ({
 
                                                         )
                                                     )}
+
+                                                    {/* Preserve existing item in edit mode if not in filtered list */}
+                                                    {bomItem.itemId && !rawMaterialItems.some((i) => String(i.id) === String(bomItem.itemId)) && (() => {
+                                                        const matched = (items || []).find((i) => String(i.id) === String(bomItem.itemId));
+                                                        return matched ? (
+                                                            <option key={matched.id} value={matched.id} className="text-slate-900">
+                                                                {matched.item_name}
+                                                            </option>
+                                                        ) : null;
+                                                    })()}
 
                                                 </select>
 

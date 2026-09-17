@@ -87,6 +87,24 @@ export const updateProductionStatus = async (id, status) => {
   return response.data;
 };
 
+// Accept Finished Goods Inward in Store
+export const acceptFinishedGoodsInward = async (id) => {
+  const response = await axios.post(`${BASE_URL}/${id}/accept-finished-goods`, {}, {
+    withCredentials: true,
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.data;
+};
+
+// Accept Returned Raw Materials in Store
+export const acceptReturnedMaterials = async (id) => {
+  const response = await axios.post(`${BASE_URL}/${id}/accept-returns`, {}, {
+    withCredentials: true,
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.data;
+};
+
 // Delete Production Task
 export const deleteProductionTask = async (id) => {
   const response = await axios.delete(`${BASE_URL}/${id}`, {

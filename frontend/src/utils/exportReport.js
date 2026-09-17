@@ -222,3 +222,199 @@ export const exportWarehouseStockReport = (items = []) => {
 
   exportToExcel(exportData, "Warehouse_Stock_Report", "Warehouse Stock");
 };
+
+/**
+ * 5. Export Damaged Items Detailed Task Report
+ */
+export const exportDamagedItemsDetailedReport = (tasks = [], dateRange = {}) => {
+  if (!tasks || tasks.length === 0) {
+    alert("No damaged items data available to export.");
+    return;
+  }
+
+  const rows = [];
+  let sNo = 1;
+
+  tasks.forEach((task) => {
+    let damagedItems = [];
+    const notes = task.notes || '';
+    const scrapMatch = notes.match(/\[RAW MATERIALS SCRAP DETAILS\]:\s*([\s\S]*?)(?=\n\[|$)/i);
+    if (scrapMatch && scrapMatch[1]) {
+      const scrapText = scrapMatch[1].trim();
+      const entries = scrapText.split(',').map((s) => s.trim()).filter(Boolean);
+      entries.forEach((entry) => {
+        const parts = entry.split(':');
+        if (parts.length >= 2) {
+          const name = parts[0].trim();
+          const rest = parts[1].trim();
+          const qtyMatch = rest.match(/([\d.]+)/);
+          const unitMatch = rest
+            .replace(/[\d.]+/g, '')
+            .replace(/\/?\s*(?:damaged|scrapped|defective)\b/gi, '')
+            .replace(/[\/\s]+$/, '')
+            .trim();
+          damagedItems.push({
+            item_name: name,
+            qty: qtyMatch ? parseFloat(qtyMatch[1]) : rest,
+            unit: unitMatch || 'Units',
+          });
+        } else {
+          damagedItems.push({
+            item_name: entry.replace(/damaged|scrapped/gi, '').trim(),
+            qty: '—',
+            unit: '—',
+          });
+        }
+      });
+    }
+
+    const taskDate = task.completion_date || task.updated_at || task.created_at;
+    const formattedDate = taskDate ? new Date(taskDate).toLocaleDateString("en-IN") : "—";
+
+    if (damagedItems.length === 0) {
+      rows.push({
+        "S.No": sNo++,
+        "Task ID": task.task_id || `TASK-${task.id}`,
+        "Product / Batch Name": task.product_name || "—",
+        "Assigned / In-charge": task.assigned_to || "—",
+        "Reported Date": formattedDate,
+        "Damaged Item Name": "—",
+        "Damaged / Scrapped Qty": 0,
+        "Unit": "—",
+      });
+    } else {
+      damagedItems.forEach((it) => {
+        const cleanUnit = it.unit ? String(it.unit).replace(/[\/\s]+$/, '').trim() : "Units";
+        rows.push({
+          "S.No": sNo++,
+          "Task ID": task.task_id || `TASK-${task.id}`,
+          "Product / Batch Name": task.product_name || "—",
+          "Assigned / In-charge": task.assigned_to || "—",
+          "Reported Date": formattedDate,
+          "Damaged Item Name": it.item_name || "—",
+          "Damaged / Scrapped Qty": it.qty ?? 0,
+          "Unit": cleanUnit || "Units",
+        });
+      });
+    }
+  });
+
+  const rangeStr = (dateRange.from || dateRange.to)
+    ? `_${dateRange.from || 'start'}_to_${dateRange.to || 'end'}`
+    : '';
+
+  exportToExcel(rows, `Damaged_Items_Detailed_Report${rangeStr}`, "Detailed Damage Report");
+};
+
+/**
+ * 6. Export Damaged Items Date-Range Summary Report
+ */
+export const exportDamagedItemsSummaryReport = (aggregatedItems = [], dateRange = {}) => {
+  if (!aggregatedItems || aggregatedItems.length === 0) {
+    alert("No summary damage data available to export.");
+    return;
+  }
+
+  const rows = aggregatedItems.map((it, idx) => {
+    const reportedDate = it.latest_date ? new Date(it.latest_date).toLocaleDateString("en-IN") : "—";
+    const cleanUnit = it.unit ? String(it.unit).replace(/[\/\s]+$/, '').trim() : "Units";
+    return {
+      "S.No": idx + 1,
+      "Damaged Item Name": it.item_name || "—",
+      "Total Damaged / Scrapped Qty": it.total_qty ?? 0,
+      "Unit": cleanUnit || "Units",
+      "Reported Date": reportedDate,
+    };
+  });
+
+  const rangeStr = (dateRange.from || dateRange.to)
+    ? `_${dateRange.from || 'start'}_to_${dateRange.to || 'end'}`
+    : '';
+
+  exportToExcel(rows, `Damaged_Items_Summary_Report${rangeStr}`, "Damage Summary Report");
+};
+
+/**
+ * 7. Export Returned Items Report
+ */
+export const exportReturnedItemsReport = (tasks = [], dateRange = {}) => {
+  if (!tasks || tasks.length === 0) {
+    alert("No returned items data available to export.");
+    return;
+  }
+
+  const rows = [];
+  let sNo = 1;
+
+  tasks.forEach((task) => {
+    const isAccepted = (task.notes || '').includes('[STORE RETURNS ACCEPTED]');
+    const taskDate = task.completion_date || task.updated_at || task.created_at;
+    const formattedDate = taskDate ? new Date(taskDate).toLocaleDateString("en-IN") : "—";
+
+    const notes = task.notes || '';
+    const returnMatch = notes.match(/\[STORE RETURN DETAILS\]:\s*([\s\S]*?)(?=\n\[|$)/i);
+    let returnedItems = [];
+    if (returnMatch && returnMatch[1]) {
+      const returnText = returnMatch[1].trim();
+      const entries = returnText.split(',').map((s) => s.trim()).filter(Boolean);
+      entries.forEach((entry) => {
+        const parts = entry.split(':');
+        if (parts.length >= 2) {
+          const name = parts[0].trim();
+          const rest = parts[1].trim();
+          const qtyMatch = rest.match(/([\d.]+)/);
+          const unitMatch = rest
+            .replace(/[\d.]+/g, '')
+            .replace(/\/?\s*(?:returned|to|store)\b/gi, '')
+            .replace(/[\/\s]+$/, '')
+            .trim();
+          returnedItems.push({
+            item_name: name,
+            qty: qtyMatch ? parseFloat(qtyMatch[1]) : rest,
+            unit: unitMatch || 'Units',
+          });
+        } else {
+          returnedItems.push({
+            item_name: entry.replace(/returned to store/gi, '').trim(),
+            qty: '—',
+            unit: '—',
+          });
+        }
+      });
+    }
+
+    if (returnedItems.length === 0) {
+      rows.push({
+        "S.No": sNo++,
+        "Task ID": task.task_id || `TASK-${task.id}`,
+        "Finished Product": task.product_name || "—",
+        "Returned Item Name": "—",
+        "Returned Qty": 0,
+        "Unit": "—",
+        "Returned Date": formattedDate,
+        "Store Inward Status": isAccepted ? "Accepted in Store" : "Pending Acceptance"
+      });
+    } else {
+      returnedItems.forEach((it) => {
+        const cleanUnit = it.unit ? String(it.unit).replace(/[\/\s]+$/, '').trim() : "Units";
+        rows.push({
+          "S.No": sNo++,
+          "Task ID": task.task_id || `TASK-${task.id}`,
+          "Finished Product": task.product_name || "—",
+          "Returned Item Name": it.item_name || "—",
+          "Returned Qty": it.qty ?? 0,
+          "Unit": cleanUnit || "Units",
+          "Returned Date": formattedDate,
+          "Store Inward Status": isAccepted ? "Accepted in Store" : "Pending Acceptance"
+        });
+      });
+    }
+  });
+
+  const rangeStr = (dateRange.from || dateRange.to)
+    ? `_${dateRange.from || 'start'}_to_${dateRange.to || 'end'}`
+    : '';
+
+  exportToExcel(rows, `Returned_Items_Report${rangeStr}`, "Returned Items");
+};
+
